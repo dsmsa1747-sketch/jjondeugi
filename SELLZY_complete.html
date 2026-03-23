@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SELLZY — 분양 쇼핑몰 플랫폼</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.5.0/Recharts.js"></script>
+<style>
+:root{--bg:#0D0D0F;--bg2:#141418;--bg3:#1C1C22;--bg4:#242430;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#F0EDE8;--text2:#9895A0;--text3:#5C5968;--accent:#7C6EFA;--accent2:#A99DFC;--accent-bg:rgba(124,110,250,0.12);--green:#2DD4A0;--green-bg:rgba(45,212,160,0.1);--orange:#F5A623;--red:#FF6B6B;--radius:12px;--radius-lg:18px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'Pretendard',sans-serif;transition:all .18s ease;text-decoration:none}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:#9082FB;transform:translateY(-1px)}
+.bs{background:var(--bg3);color:var(--text);border:1px solid var(--border2)}.bs:hover{background:var(--bg4)}
+.bg2{background:transparent;color:var(--text2)}.bg2:hover{color:var(--text);background:var(--bg3)}
+.blg{padding:14px 28px;font-size:15px;border-radius:var(--radius-lg)}
+.bsm{padding:6px 14px;font-size:12px;border-radius:8px}
+.bgr{background:var(--green);color:#0D0D0F}.bgr:hover{background:#3DEBB0;transform:translateY(-1px)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px}
+input,select{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;font-size:14px;font-family:'Pretendard',sans-serif;outline:none;transition:border .15s;width:100%}
+input:focus,select:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--green-bg);color:var(--green)}.ba{background:var(--accent-bg);color:var(--accent2)}.bo{background:rgba(245,166,35,.1);color:var(--orange)}
+.tn{background:rgba(3,199,90,.15);color:#03C75A}.tc{background:rgba(255,79,0,.15);color:#FF4F00}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp .35s ease both}
+.fu1{animation:fadeUp .35s .05s ease both}.fu2{animation:fadeUp .35s .1s ease both}.fu3{animation:fadeUp .35s .15s ease both}.fu4{animation:fadeUp .35s .2s ease both}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+.dt{width:100%;border-collapse:collapse;font-size:13px}
+.dt th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border)}
+.dt td{padding:12px 12px;border-bottom:1px solid var(--border)}
+.dt tr:last-child td{border-bottom:none}
+.dt tr:hover td{background:var(--bg3)}
+.mc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;min-height:100vh}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useCallback,useReducer} = React;
+const {AreaChart,Area,BarChart,Bar,LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer} = Recharts;
+
+// ---- STATE ----
+const PRODUCTS = [
+  {id:1,name:'프리미엄 무선 이어폰 AX-200',price:89000,img:'🎧',src:'naver',cat:'전자기기',sales:142},
+  {id:2,name:'유기농 녹차 선물세트 30팩',price:24500,img:'🍵',src:'coupang',cat:'식품',sales:89},
+  {id:3,name:'접이식 캠핑 의자 2인 세트',price:45000,img:'🪑',src:'naver',cat:'스포츠',sales:67},
+  {id:4,name:'천연 비타민C 영양제 60정',price:32000,img:'💊',src:'coupang',cat:'건강',sales:201},
+  {id:5,name:'항균 스테인리스 텀블러 500ml',price:18500,img:'☕',src:'naver',cat:'생활',sales:155},
+  {id:6,name:'울트라 슬림 노트북 거치대',price:39000,img:'💻',src:'coupang',cat:'전자기기',sales:98},
+  {id:7,name:'한방 두피 샴푸 500ml',price:21000,img:'🧴',src:'naver',cat:'뷰티',sales:312},
+  {id:8,name:'수제 천연 아로마 캔들 세트',price:28000,img:'🕯️',src:'naver',cat:'생활',sales:44},
+];
+const MALLS_INIT = [
+  {id:1,owner:'이수연',sns:'@suyeon_s',platform:'instagram',joinDate:'2025-03-01',revenue:182500,profit:5475,status:'active'},
+  {id:2,owner:'박지호',sns:'@jiho_park',platform:'kakao',joinDate:'2025-02-15',revenue:94000,profit:2820,status:'active'},
+  {id:3,owner:'최하은',sns:'@haeun_choi',platform:'naver',joinDate:'2025-03-10',revenue:31000,profit:930,status:'active'},
+  {id:4,owner:'김민준',sns:'@minjun_k',platform:'kakao',joinDate:'2025-03-23',revenue:0,profit:0,status:'new'},
+];
+
+let _state = {page:'landing',user:null,role:null,products:[...PRODUCTS],malls:[...MALLS_INIT],cart:[]};
+let _listeners = [];
+function getState(){return _state}
+function setState(fn){_state={..._state,...fn(_state)};_listeners.forEach(l=>l())}
+function useAppState(sel){const[,f]=useReducer(x=>x+1,0);React.useEffect(()=>{_listeners.push(f);return()=>{_listeners=_listeners.filter(l=>l!==f)}},[]);return sel(_state)}
+
+// ---- HELPERS ----
+function P(v){return v.toLocaleString('ko-KR')}
+function NavBtn({label,active,onClick}){return React.createElement('button',{onClick,style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',background:'transparent',border:'none',cursor:'pointer',fontSize:13,fontFamily:"'Pretendard',sans-serif",width:'100%',textAlign:'left',color:active?'var(--text)':'var(--text2)',backgroundColor:active?'var(--accent-bg)':'transparent',borderLeft:`2px solid ${active?'var(--accent)':'transparent'}`}},label)}
+
+// ---- PAGES ----
+
+function Landing(){
+  const setPage=p=>setState(s=>({...s,page:p}));
+  const demoAs=r=>{
+    const users={owner:{id:1,owner:'이수연',sns:'@suyeon_s',platform:'instagram',revenue:182500,profit:5475},supplier:{name:'공급자A',sns:'@supplier_a'},admin:{name:'관리자'}};
+    setState(s=>({...s,user:users[r],role:r,page:r==='owner'?'myMall':r==='supplier'?'supplier':'admin'}));
+  };
+  return React.createElement('div',{style:{minHeight:'100vh',overflowX:'hidden'}},
+    // Nav
+    React.createElement('nav',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 40px',borderBottom:'1px solid var(--border)',position:'sticky',top:0,background:'rgba(13,13,15,0.9)',backdropFilter:'blur(16px)',zIndex:100}},
+      React.createElement('div',{style:{fontSize:20,fontWeight:700,letterSpacing:'-.02em'}},React.createElement('span',{style:{color:'var(--accent)'}},'SELL'),'ZY'),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setPage('shop')},'쇼핑하기'),
+        React.createElement('button',{className:'btn bs bsm',onClick:()=>setPage('signup')},'무료 분양받기'),
+        React.createElement('button',{className:'btn bp bsm',onClick:()=>demoAs('owner')},'데모 체험 →')
+      )
+    ),
+    // Hero
+    React.createElement('section',{style:{padding:'90px 40px 70px',textAlign:'center',position:'relative'}},
+      React.createElement('div',{style:{position:'absolute',inset:0,background:'radial-gradient(ellipse 80% 60% at 50% 0%,rgba(124,110,250,.12) 0%,transparent 70%)',pointerEvents:'none'}}),
+      React.createElement('div',{className:'fu',style:{display:'inline-flex',alignItems:'center',gap:8,background:'var(--accent-bg)',border:'1px solid rgba(124,110,250,.3)',borderRadius:20,padding:'5px 14px',fontSize:12,color:'var(--accent2)',marginBottom:28}},
+        React.createElement('span',{className:'dot'}),
+        '월 2만원으로 내 쇼핑몰 운영 · 수익 자동 정산'
+      ),
+      React.createElement('h1',{className:'fu1',style:{fontSize:'clamp(36px,6vw,68px)',fontWeight:800,lineHeight:1.1,letterSpacing:'-.04em',marginBottom:22}},
+        'SNS 아이디 하나로',React.createElement('br'),
+        React.createElement('span',{style:{color:'var(--accent)'}},'쇼핑몰을 분양받으세요')
+      ),
+      React.createElement('p',{className:'fu2',style:{fontSize:16,color:'var(--text2)',maxWidth:480,margin:'0 auto 36px',lineHeight:1.7}},
+        '5초 가입, 즉시 분양. 공급자가 올린 상품이 자동 등록되고',React.createElement('br'),
+        '내 쇼핑몰 매출의 3%가 매월 10일 계좌로 입금됩니다.'
+      ),
+      React.createElement('div',{className:'fu3',style:{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap'}},
+        React.createElement('button',{className:'btn bp blg',onClick:()=>setPage('signup'),style:{minWidth:180}},'지금 무료로 시작하기 →'),
+        React.createElement('button',{className:'btn bs blg',onClick:()=>setPage('shop')},'분양몰 구경하기')
+      )
+    ),
+    // Stats bar
+    React.createElement('section',{style:{padding:'0 40px 70px'}},
+      React.createElement('div',{className:'fu4',style:{maxWidth:800,margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:2,background:'var(--border)',borderRadius:20,overflow:'hidden'}},
+        ...[['1,248','활성 분양몰','var(--accent)'],['4,791','등록 상품','var(--text)'],['₩38.2M','이번 달 거래액','var(--green)'],['5초','평균 가입시간','var(--text)']].map(([v,l,c],i)=>
+          React.createElement('div',{key:i,style:{background:'var(--bg2)',padding:'26px 22px',textAlign:'center'}},
+            React.createElement('div',{style:{fontSize:26,fontWeight:700,marginBottom:4,color:c}},v),
+            React.createElement('div',{style:{fontSize:12,color:'var(--text2)'}},l)
+          )
+        )
+      )
+    ),
+    // How it works
+    React.createElement('section',{style:{padding:'60px 40px',background:'var(--bg2)',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)'}},
+      React.createElement('div',{style:{maxWidth:1000,margin:'0 auto'}},
+        React.createElement('div',{style:{textAlign:'center',marginBottom:50}},
+          React.createElement('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:8}},'HOW IT WORKS'),
+          React.createElement('div',{style:{fontSize:26,fontWeight:700}},'이렇게 수익을 만드세요')
+        ),
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}},
+          ...[
+            ['01','✨','SNS로 5초 가입','카카오·네이버·인스타그램 아이디만 입력하면 나만의 쇼핑몰이 즉시 생성됩니다.'],
+            ['02','🏪','자동 상품 진열','공급자가 등록한 상품이 내 쇼핑몰에 자동으로 진열됩니다.'],
+            ['03','💰','3% 수익 자동 입금','매출의 3%가 매월 10일 계좌로 자동 입금됩니다.'],
+          ].map(([step,ic,title,desc])=>
+            React.createElement('div',{key:step,className:'card',style:{position:'relative',overflow:'hidden'}},
+              React.createElement('div',{style:{position:'absolute',top:14,right:18,fontSize:34,fontWeight:800,color:'var(--bg4)',lineHeight:1}},step),
+              React.createElement('div',{style:{fontSize:30,marginBottom:12}},ic),
+              React.createElement('div',{style:{fontSize:16,fontWeight:600,marginBottom:6}},title),
+              React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.7}},desc)
+            )
+          )
+        )
+      )
+    ),
+    // Demo quick access
+    React.createElement('section',{style:{padding:'36px 40px',background:'var(--bg2)',borderTop:'1px solid var(--border)'}},
+      React.createElement('div',{style:{maxWidth:700,margin:'0 auto',textAlign:'center'}},
+        React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:14}},'데모 체험하기'),
+        React.createElement('div',{style:{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap'}},
+          React.createElement('button',{className:'btn bs bsm',onClick:()=>demoAs('owner')},'👤 분양몰 운영자'),
+          React.createElement('button',{className:'btn bs bsm',onClick:()=>demoAs('supplier')},'📦 공급자'),
+          React.createElement('button',{className:'btn bs bsm',onClick:()=>demoAs('admin')},'⚙️ 관리자'),
+          React.createElement('button',{className:'btn bs bsm',onClick:()=>setPage('shop')},'🛍️ 쇼핑몰')
+        )
+      )
+    )
+  )
+}
+
+function Signup(){
+  const [step,setStep]=useState(1);
+  const [snsId,setSnsId]=useState('');
+  const [platform,setPlatform]=useState('');
+  const [bank,setBank]=useState('국민은행');
+  const [acct,setAcct]=useState('');
+  const [done,setDone]=useState(false);
+  const setPage=p=>setState(s=>({...s,page:p}));
+
+  const finish=()=>{
+    if(!snsId.trim())return;
+    const nm={id:Date.now(),owner:snsId,sns:snsId,platform,revenue:0,profit:0,status:'new',bankAccount:`${bank} ${acct}`};
+    setState(s=>({...s,malls:[nm,...s.malls],user:nm,role:'owner',page:'myMall'}));
+    setDone(true);
+  };
+
+  if(done)return React.createElement('div',{style:{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24}},
+    React.createElement('div',{style:{textAlign:'center',maxWidth:400}},
+      React.createElement('div',{style:{fontSize:56,marginBottom:16}},'🎉'),
+      React.createElement('h2',{style:{fontSize:26,fontWeight:700,marginBottom:8}},'분양 완료!'),
+      React.createElement('p',{style:{color:'var(--text2)',marginBottom:28,lineHeight:1.7}},snsId,'님의 쇼핑몰이 생성되었습니다.',React.createElement('br'),'매월 10일 수익이 자동 입금됩니다.'),
+      React.createElement('button',{className:'btn bp blg',onClick:()=>setPage('myMall'),style:{width:'100%'}},'내 쇼핑몰 대시보드로 →')
+    )
+  );
+
+  const STEPS=[1,2,3];
+  const SNS=[{id:'kakao',l:'카카오톡',ic:'💬',bg:'#FEE500',c:'#3A1D1D'},{id:'naver',l:'네이버',ic:'N',bg:'#03C75A',c:'#fff'},{id:'instagram',l:'인스타그램',ic:'📸',bg:'linear-gradient(135deg,#f09433,#e6683c,#dc2743)',c:'#fff'}];
+
+  return React.createElement('div',{style:{minHeight:'100vh',display:'flex'}},
+    React.createElement('div',{style:{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:40}},
+      React.createElement('div',{style:{width:'100%',maxWidth:420}},
+        React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setPage('landing'),style:{marginBottom:28}},'← 홈으로'),
+        React.createElement('div',{style:{display:'flex',gap:8,marginBottom:34}},
+          STEPS.map(n=>React.createElement('div',{key:n,style:{flex:1,height:3,borderRadius:2,background:n<=step?'var(--accent)':'var(--bg4)',transition:'background .3s'}}))
+        ),
+        step===1&&React.createElement('div',{className:'fu'},
+          React.createElement('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:6}},'STEP 01'),
+          React.createElement('h2',{style:{fontSize:24,fontWeight:700,marginBottom:8}},'SNS로 5초 가입'),
+          React.createElement('p',{style:{color:'var(--text2)',fontSize:14,marginBottom:26,lineHeight:1.6}},'사용 중인 SNS 채널로 즉시 시작하세요'),
+          SNS.map(opt=>React.createElement('button',{key:opt.id,onClick:()=>{setPlatform(opt.id);setStep(2)},style:{display:'flex',alignItems:'center',gap:14,width:'100%',padding:'13px 16px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',cursor:'pointer',marginBottom:10,color:'var(--text)',fontFamily:"'Pretendard',sans-serif",transition:'border-color .15s'}},
+            React.createElement('div',{style:{width:34,height:34,borderRadius:10,background:opt.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:opt.id==='naver'?13:17,fontWeight:opt.id==='naver'?800:400,color:opt.c,flexShrink:0}},opt.ic),
+            React.createElement('span',{style:{fontSize:14,fontWeight:500}},opt.l,'로 시작하기'),
+            React.createElement('span',{style:{marginLeft:'auto',color:'var(--text3)',fontSize:12}},'→')
+          )),
+          React.createElement('div',{style:{textAlign:'center',position:'relative',margin:'16px 0',fontSize:12,color:'var(--text3)'}},
+            React.createElement('div',{style:{position:'absolute',top:'50%',left:0,right:0,height:'1px',background:'var(--border)'}}),
+            React.createElement('span',{style:{background:'var(--bg)',padding:'0 12px',position:'relative'}},'또는 직접 입력')
+          ),
+          React.createElement('div',{style:{marginBottom:14}},
+            React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'SNS / 채널 아이디'),
+            React.createElement('input',{value:snsId,onChange:e=>setSnsId(e.target.value),placeholder:'@아이디 입력'})
+          ),
+          React.createElement('button',{className:'btn bp',style:{width:'100%'},onClick:()=>{if(snsId.trim()){setPlatform('direct');setStep(2)}}},'계속하기 →')
+        ),
+        step===2&&React.createElement('div',{className:'fu'},
+          React.createElement('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:6}},'STEP 02'),
+          React.createElement('h2',{style:{fontSize:24,fontWeight:700,marginBottom:8}},'정산 계좌 등록'),
+          React.createElement('p',{style:{color:'var(--text2)',fontSize:14,marginBottom:24}},'수익이 매월 10일에 자동 입금됩니다'),
+          React.createElement('div',{style:{marginBottom:14}},
+            React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'은행 선택'),
+            React.createElement('select',{value:bank,onChange:e=>setBank(e.target.value)},
+              ['국민은행','신한은행','우리은행','하나은행','카카오뱅크','토스뱅크'].map(b=>React.createElement('option',{key:b},b))
+            )
+          ),
+          React.createElement('div',{style:{marginBottom:14}},
+            React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'계좌번호'),
+            React.createElement('input',{value:acct,onChange:e=>setAcct(e.target.value),placeholder:'숫자만 입력'})
+          ),
+          React.createElement('div',{style:{background:'var(--bg3)',borderRadius:'var(--radius)',padding:14,marginBottom:18,fontSize:12,color:'var(--text2)',lineHeight:1.7}},'💡 계좌 등록은 나중에도 가능합니다. 구독료(₩20,000)는 포인트·수익에서 자동 차감됩니다.'),
+          React.createElement('div',{style:{display:'flex',gap:10}},
+            React.createElement('button',{className:'btn bs',style:{flex:1},onClick:()=>setStep(1)},'이전'),
+            React.createElement('button',{className:'btn bp',style:{flex:2},onClick:()=>setStep(3)},'계속하기 →')
+          )
+        ),
+        step===3&&React.createElement('div',{className:'fu'},
+          React.createElement('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:6}},'STEP 03'),
+          React.createElement('h2',{style:{fontSize:24,fontWeight:700,marginBottom:8}},'분양 확인'),
+          React.createElement('div',{className:'card',style:{marginBottom:18}},
+            [['아이디',snsId||'(미입력)'],['플랫폼',platform],['정산 계좌',acct?`${bank} ${acct}`:'나중에 등록'],['구독료','₩20,000 / 월 (자동 차감)'],['수익 정산','매출 3% · 매월 10일']].map(([k,v],i)=>
+              React.createElement('div',{key:i,style:{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:i<4?'1px solid var(--border)':'none',fontSize:13}},
+                React.createElement('span',{style:{color:'var(--text2)'}},k),
+                React.createElement('span',null,v)
+              )
+            )
+          ),
+          React.createElement('div',{style:{display:'flex',gap:10}},
+            React.createElement('button',{className:'btn bs',style:{flex:1},onClick:()=>setStep(2)},'이전'),
+            React.createElement('button',{className:'btn bgr',style:{flex:2},onClick:finish},'🎉 분양 완료!')
+          )
+        )
+      )
+    ),
+    React.createElement('div',{style:{width:400,background:'var(--bg2)',borderLeft:'1px solid var(--border)',display:'flex',flexDirection:'column',justifyContent:'center',padding:44}},
+      React.createElement('div',{style:{fontSize:32,marginBottom:14}},'🏪'),
+      React.createElement('h3',{style:{fontSize:19,fontWeight:700,marginBottom:10}},'분양몰이란?'),
+      React.createElement('p',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.8,marginBottom:28}},'SELLZY에서 제공하는 상품들로 채워진 나만의 온라인 쇼핑몰입니다. 별도의 상품 소싱 없이도 즉시 운영 가능하며, 판매가 일어날 때마다 수익이 쌓입니다.'),
+      ...[['⚡','5초 개설','복잡한 절차 없이 즉시'],['📦','상품 자동 진열','공급자 상품이 자동으로 채워짐'],['💳','구독료 자동 차감','수익에서 구독료 자동 처리'],['📱','모바일 최적화','SNS에서 바로 공유 가능']].map(([ic,t,d])=>
+        React.createElement('div',{key:t,style:{display:'flex',gap:12,alignItems:'flex-start',marginBottom:14}},
+          React.createElement('div',{style:{width:34,height:34,borderRadius:10,background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}},ic),
+          React.createElement('div',null,React.createElement('div',{style:{fontSize:13,fontWeight:600,marginBottom:2}},t),React.createElement('div',{style:{fontSize:12,color:'var(--text2)'}},d))
+        )
+      )
+    )
+  )
+}
+
+function Shop(){
+  const products=useAppState(s=>s.products);
+  const cart=useAppState(s=>s.cart);
+  const [cat,setCat]=useState('전체');
+  const [search,setSearch]=useState('');
+  const [cartOpen,setCartOpen]=useState(false);
+  const [orderDone,setOrderDone]=useState(null);
+  const CATS=['전체','전자기기','식품','스포츠','건강','생활','뷰티'];
+  const filtered=products.filter(p=>(cat==='전체'||p.cat===cat)&&(search===''||p.name.includes(search)));
+  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const cnt=cart.reduce((s,i)=>s+i.qty,0);
+
+  const addToCart=p=>setState(s=>{const ex=s.cart.find(i=>i.id===p.id);return{...s,cart:ex?s.cart.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i):[...s.cart,{...p,qty:1}]}});
+  const remove=id=>setState(s=>({...s,cart:s.cart.filter(i=>i.id!==id)}));
+  const doCheckout=()=>{
+    const order={id:Date.now(),items:cart,total,date:new Date().toLocaleDateString('ko')};
+    setState(s=>({...s,cart:[],malls:s.malls.map((m,i)=>i===0?{...m,revenue:m.revenue+total,profit:m.profit+Math.floor(total*.03)}:m)}));
+    setOrderDone(order);setCartOpen(false);
+  };
+
+  if(orderDone)return React.createElement('div',{style:{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}},
+    React.createElement('div',{style:{textAlign:'center',maxWidth:380}},
+      React.createElement('div',{style:{fontSize:52,marginBottom:14}},'🛍️'),
+      React.createElement('h2',{style:{fontSize:22,fontWeight:700,marginBottom:8}},'주문 완료!'),
+      React.createElement('p',{style:{color:'var(--text2)',marginBottom:22,lineHeight:1.7}},'총 ',React.createElement('strong',{style:{color:'var(--green)'}},'₩'+P(orderDone.total)),' 결제 완료',React.createElement('br'),'분양몰에 ',React.createElement('strong',{style:{color:'var(--accent)'}},'₩'+P(Math.floor(orderDone.total*.03))),' 적립'),
+      React.createElement('div',{style:{display:'flex',gap:10}},
+        React.createElement('button',{className:'btn bs',style:{flex:1},onClick:()=>setOrderDone(null)},'계속 쇼핑'),
+        React.createElement('button',{className:'btn bp',style:{flex:1},onClick:()=>setState(s=>({...s,page:'myMall'}))},'내 수익 확인 →')
+      )
+    )
+  );
+
+  return React.createElement('div',{style:{minHeight:'100vh'}},
+    React.createElement('div',{style:{position:'sticky',top:0,zIndex:100,background:'rgba(13,13,15,.9)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--border)',padding:'14px 28px',display:'flex',alignItems:'center',gap:14}},
+      React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setState(s=>({...s,page:'landing'}))},'← SELLZY'),
+      React.createElement('div',{style:{flex:1}},React.createElement('input',{value:search,onChange:e=>setSearch(e.target.value),placeholder:'상품 검색...',style:{maxWidth:300}})),
+      React.createElement('button',{className:'btn bs bsm',onClick:()=>setCartOpen(true),style:{position:'relative'}},
+        '🛒 장바구니',
+        cnt>0&&React.createElement('span',{style:{position:'absolute',top:-6,right:-6,width:18,height:18,borderRadius:'50%',background:'var(--accent)',color:'#fff',fontSize:10,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center'}},cnt)
+      )
+    ),
+    React.createElement('div',{style:{padding:'16px 28px',display:'flex',gap:8,overflowX:'auto'}},
+      CATS.map(c=>React.createElement('button',{key:c,className:`btn bsm ${cat===c?'bp':'bs'}`,onClick:()=>setCat(c)},c))
+    ),
+    React.createElement('div',{style:{padding:'0 28px 40px',display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))',gap:16}},
+      filtered.map((p,i)=>{
+        const [added,setAdded]=useState?useState(false):[false,()=>{}];
+        return React.createElement(ProductCard,{key:p.id,product:p,onAdd:()=>addToCart(p)})
+      })
+    ),
+    cartOpen&&React.createElement('div',{style:{position:'fixed',inset:0,zIndex:200},onClick:()=>setCartOpen(false)},
+      React.createElement('div',{style:{position:'absolute',inset:0,background:'rgba(0,0,0,.5)'}}),
+      React.createElement('div',{onClick:e=>e.stopPropagation(),style:{position:'absolute',right:0,top:0,bottom:0,width:360,background:'var(--bg)',borderLeft:'1px solid var(--border)',display:'flex',flexDirection:'column'}},
+        React.createElement('div',{style:{padding:'18px 22px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}},
+          React.createElement('h3',{style:{fontSize:15,fontWeight:600}},'장바구니 '+(cnt>0?`(${cnt})`:'') ),
+          React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setCartOpen(false)},'✕')
+        ),
+        React.createElement('div',{style:{flex:1,overflowY:'auto',padding:20}},
+          cart.length===0?React.createElement('div',{style:{textAlign:'center',color:'var(--text2)',paddingTop:60,fontSize:14}},React.createElement('div',{style:{fontSize:36,marginBottom:10}},'🛒'),'장바구니가 비어있습니다'):
+          cart.map(item=>React.createElement('div',{key:item.id,style:{display:'flex',gap:10,marginBottom:12,padding:12,background:'var(--bg2)',borderRadius:'var(--radius)',border:'1px solid var(--border)'}},
+            React.createElement('div',{style:{width:42,height:42,borderRadius:8,background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}},item.img),
+            React.createElement('div',{style:{flex:1,minWidth:0}},
+              React.createElement('div',{style:{fontSize:12,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},item.name),
+              React.createElement('div',{style:{fontSize:11,color:'var(--text2)'}},`₩${P(item.price)} × ${item.qty}`)
+            ),
+            React.createElement('button',{className:'btn bg2 bsm',style:{padding:'4px 8px',color:'var(--text3)'},onClick:()=>remove(item.id)},'✕')
+          ))
+        ),
+        cart.length>0&&React.createElement('div',{style:{padding:20,borderTop:'1px solid var(--border)'}},
+          React.createElement('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:14,fontSize:14}},
+            React.createElement('span',{style:{color:'var(--text2)'}},'합계'),
+            React.createElement('strong',null,'₩'+P(total))
+          ),
+          React.createElement('button',{className:'btn bp blg',style:{width:'100%'},onClick:doCheckout},'결제하기 ₩'+P(total)),
+          React.createElement('button',{className:'btn bg2 bsm',style:{width:'100%',marginTop:8},onClick:()=>{setState(s=>({...s,cart:[]}));setCartOpen(false)}},'장바구니 비우기')
+        )
+      )
+    )
+  )
+}
+
+function ProductCard({product:p,onAdd}){
+  const [added,setAdded]=useState(false);
+  return React.createElement('div',{style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',overflow:'hidden',transition:'all .15s',cursor:'default'},
+    onMouseOver:e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.transform='translateY(-2px)'},
+    onMouseOut:e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.transform='translateY(0)'}},
+    React.createElement('div',{style:{height:130,background:'var(--bg3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:48}},p.img),
+    React.createElement('div',{style:{padding:'12px 14px'}},
+      React.createElement('div',{style:{display:'flex',gap:6,marginBottom:6,alignItems:'center'}},
+        React.createElement('span',{className:`tag ${p.src==='naver'?'tn':'tc'}`},p.src==='naver'?'네이버':'쿠팡'),
+        React.createElement('span',{style:{fontSize:11,color:'var(--text3)'}},p.cat)
+      ),
+      React.createElement('div',{style:{fontSize:13,fontWeight:500,marginBottom:6,lineHeight:1.4,height:34,overflow:'hidden'}},p.name),
+      React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}},
+        React.createElement('strong',{style:{fontSize:14}},'₩'+P(p.price)),
+        React.createElement('button',{className:`btn bsm ${added?'bgr':'bp'}`,onClick:()=>{onAdd();setAdded(true);setTimeout(()=>setAdded(false),1100)},style:{minWidth:52}},added?'✓':'담기')
+      ),
+      p.sales>0&&React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:5}},'판매 '+p.sales+'건')
+    )
+  )
+}
+
+const MONTHLY_DATA=[{m:'10월',rev:41,p:1.2},{m:'11월',rev:78,p:2.3},{m:'12월',rev:102,p:3.1},{m:'1월',rev:89,p:2.7},{m:'2월',rev:134,p:4.0},{m:'3월',rev:182,p:5.5}];
+
+function MyMall(){
+  const user=useAppState(s=>s.user)||{id:1,owner:'이수연',sns:'@suyeon_s',platform:'instagram',revenue:182500,profit:5475};
+  const [tab,setTab]=useState('overview');
+  const setPage=p=>setState(s=>({...s,page:p}));
+  const TABS=[{id:'overview',l:'개요',ic:'📊'},{id:'sales',l:'판매 내역',ic:'📋'},{id:'settle',l:'정산',ic:'💳'},{id:'settings',l:'설정',ic:'⚙️'}];
+  const SALES=[{d:'03.21',n:'프리미엄 무선 이어폰 AX-200',p:89000,pr:2670},{d:'03.20',n:'유기농 녹차 세트 30팩',p:24500,pr:735},{d:'03.18',n:'접이식 캠핑 의자 2인',p:45000,pr:1350},{d:'03.17',n:'항균 텀블러',p:18500,pr:555}];
+
+  return React.createElement('div',{style:{minHeight:'100vh',display:'flex'}},
+    React.createElement('div',{className:'sidebar'},
+      React.createElement('div',{style:{padding:'0 16px 18px',borderBottom:'1px solid var(--border)',marginBottom:12}},
+        React.createElement('div',{style:{fontSize:17,fontWeight:700}},React.createElement('span',{style:{color:'var(--accent)'}},'SELL'),'ZY'),
+        React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},'분양몰 대시보드')
+      ),
+      React.createElement('div',{style:{padding:'10px 16px 14px',borderBottom:'1px solid var(--border)',marginBottom:12}},
+        React.createElement('div',{style:{width:34,height:34,borderRadius:'50%',background:'var(--accent-bg)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:600,color:'var(--accent2)',marginBottom:8}},(user.owner||user.sns||'?')[0]),
+        React.createElement('div',{style:{fontSize:13,fontWeight:500,marginBottom:2}},user.owner||user.sns),
+        React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},user.sns)
+      ),
+      TABS.map(t=>React.createElement(NavBtn,{key:t.id,label:`${t.ic} ${t.l}`,active:tab===t.id,onClick:()=>setTab(t.id)})),
+      React.createElement('div',{style:{marginTop:'auto',padding:'14px 16px',borderTop:'1px solid var(--border)'}},
+        React.createElement('button',{className:'btn bs bsm',style:{width:'100%',marginBottom:8},onClick:()=>setPage('shop')},'🛍️ 내 쇼핑몰'),
+        React.createElement('button',{className:'btn bg2 bsm',style:{width:'100%'},onClick:()=>setPage('landing')},'← 홈')
+      )
+    ),
+    React.createElement('div',{style:{flex:1,overflowY:'auto',padding:28}},
+      tab==='overview'&&React.createElement('div',{className:'fu'},
+        React.createElement('h1',{style:{fontSize:21,fontWeight:700,marginBottom:4}},'안녕하세요, '+(user.owner||user.sns)+'님 👋'),
+        React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:22}},'이번 달 쇼핑몰 현황'),
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:22}},
+          ...[['이번 달 매출','₩'+P(user.revenue||182500),'var(--text)',''],['내 수익 (3%)','₩'+P(user.profit||5475),'var(--green)','매월 10일'],['포인트','₩24,000','var(--accent)','자동 차감'],['다음 정산','D-7','var(--orange)','4월 10일']].map(([l,v,c,s],i)=>
+            React.createElement('div',{key:i,className:'mc'},
+              React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:7}},l),
+              React.createElement('div',{style:{fontSize:21,fontWeight:600,color:c}},v),
+              s&&React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:3}},s)
+            )
+          )
+        ),
+        React.createElement('div',{className:'card',style:{marginBottom:18}},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:16}},'월별 매출 추이'),
+          React.createElement(ResponsiveContainer,{width:'100%',height:200},
+            React.createElement(AreaChart,{data:MONTHLY_DATA},
+              React.createElement('defs',null,React.createElement('linearGradient',{id:'gr1',x1:'0',y1:'0',x2:'0',y2:'1'},React.createElement('stop',{offset:'5%',stopColor:'#7C6EFA',stopOpacity:.3}),React.createElement('stop',{offset:'95%',stopColor:'#7C6EFA',stopOpacity:0}))),
+              React.createElement(XAxis,{dataKey:'m',tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false}),
+              React.createElement(YAxis,{tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false,tickFormatter:v=>`₩${v}k`}),
+              React.createElement(Tooltip,{contentStyle:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,fontSize:12},formatter:v=>[`₩${v}k`]}),
+              React.createElement(Area,{type:'monotone',dataKey:'rev',stroke:'#7C6EFA',fill:'url(#gr1)',strokeWidth:2})
+            )
+          )
+        ),
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'구독 현황'),
+          [['월 구독료','₩20,000',''],['포인트 차감','-₩20,000','var(--green)'],['실 납부액','₩0','var(--green)'],['정산 예정','₩'+P(user.profit||5475),'var(--accent)']].map(([k,v,c],i)=>
+            React.createElement('div',{key:i,style:{display:'flex',justifyContent:'space-between',padding:'11px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:13}},
+              React.createElement('span',{style:{color:'var(--text2)'}},k),
+              React.createElement('span',{style:{fontWeight:500,color:c||'var(--text)'}},v)
+            )
+          )
+        )
+      ),
+      tab==='sales'&&React.createElement('div',{className:'fu'},
+        React.createElement('h2',{style:{fontSize:19,fontWeight:700,marginBottom:18}},'판매 내역'),
+        React.createElement('div',{className:'card'},
+          React.createElement('table',{className:'dt'},
+            React.createElement('thead',null,React.createElement('tr',null,React.createElement('th',null,'날짜'),React.createElement('th',null,'상품명'),React.createElement('th',null,'판매가'),React.createElement('th',null,'내 수익'))),
+            React.createElement('tbody',null,SALES.map((s,i)=>React.createElement('tr',{key:i},
+              React.createElement('td',{style:{color:'var(--text2)',fontSize:12}},s.d),
+              React.createElement('td',null,s.n),
+              React.createElement('td',null,'₩'+P(s.p)),
+              React.createElement('td',{style:{color:'var(--green)',fontWeight:500}},'₩'+P(s.pr))
+            )))
+          )
+        )
+      ),
+      tab==='settle'&&React.createElement('div',{className:'fu'},
+        React.createElement('h2',{style:{fontSize:19,fontWeight:700,marginBottom:18}},'정산 내역'),
+        React.createElement('div',{style:{background:'var(--green-bg)',border:'1px solid rgba(45,212,160,.2)',borderRadius:'var(--radius)',padding:'12px 16px',marginBottom:18,fontSize:13,color:'var(--green)'}},'💳 다음 정산: 4월 10일 · 예정 금액 ₩'+P(user.profit||5475)+' 자동 입금'),
+        React.createElement('div',{className:'card'},
+          React.createElement('table',{className:'dt'},
+            React.createElement('thead',null,React.createElement('tr',null,...['정산일','매출','수익','구독료','지급액','상태'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,
+              ...[['2025.03.10',134000,4020,0,4020],['2025.02.10',89000,2670,0,2670],['2025.01.10',102000,3060,0,3060]].map(([d,rev,p,sub,pay],i)=>
+                React.createElement('tr',{key:i},
+                  React.createElement('td',{style:{fontSize:12,color:'var(--text2)'}},d),
+                  React.createElement('td',null,'₩'+P(rev)),
+                  React.createElement('td',{style:{color:'var(--green)'}},'₩'+P(p)),
+                  React.createElement('td',{style:{color:'var(--text2)'}},'₩'+P(sub)),
+                  React.createElement('td',{style:{fontWeight:600}},'₩'+P(pay)),
+                  React.createElement('td',null,React.createElement('span',{className:'badge bg'},'완료'))
+                )
+              )
+            )
+          )
+        )
+      ),
+      tab==='settings'&&React.createElement('div',{className:'fu',style:{maxWidth:480}},
+        React.createElement('h2',{style:{fontSize:19,fontWeight:700,marginBottom:18}},'설정'),
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'계좌 정보'),
+          React.createElement('div',{style:{marginBottom:14}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'은행'),React.createElement('select',null,['국민은행','신한은행','카카오뱅크'].map(b=>React.createElement('option',{key:b},b)))),
+          React.createElement('div',{style:{marginBottom:14}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'계좌번호'),React.createElement('input',{placeholder:'계좌번호 입력'})),
+          React.createElement('button',{className:'btn bp bsm'},'저장')
+        )
+      )
+    )
+  )
+}
+
+function Supplier(){
+  const products=useAppState(s=>s.products);
+  const [url,setUrl]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [msg,setMsg]=useState('');
+  const setPage=p=>setState(s=>({...s,page:p}));
+
+  const addProd=async()=>{
+    if(!url.trim())return;
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,900));
+    const isNaver=url.includes('naver')||url.includes('smartstore');
+    setState(s=>({...s,products:[{id:Date.now(),name:(isNaver?'네이버':'쿠팡')+' 신규 상품 (파싱 중...)',price:Math.floor(Math.random()*70000)+15000,img:'📦',src:isNaver?'naver':'coupang',cat:'기타',sales:0,status:'pending'},...s.products]}));
+    setMsg('등록 완료! 전체 분양몰에 즉시 노출됩니다.');
+    setUrl('');setLoading(false);
+    setTimeout(()=>setMsg(''),3000);
+  };
+
+  return React.createElement('div',{style:{minHeight:'100vh',display:'flex'}},
+    React.createElement('div',{className:'sidebar'},
+      React.createElement('div',{style:{padding:'0 16px 18px',borderBottom:'1px solid var(--border)',marginBottom:12}},React.createElement('div',{style:{fontSize:17,fontWeight:700}},React.createElement('span',{style:{color:'var(--accent)'}},'SELL'),'ZY'),React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},'공급자 패널')),
+      ...[['📦 상품 등록',true],['📊 판매 현황',false],['💰 정산 내역',false]].map(([l,a])=>React.createElement(NavBtn,{key:l,label:l,active:a,onClick:()=>{}})),
+      React.createElement('div',{style:{marginTop:'auto',padding:'14px 16px',borderTop:'1px solid var(--border)'}},React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setPage('landing')},'← 홈'))
+    ),
+    React.createElement('div',{style:{flex:1,overflowY:'auto',padding:28}},
+      React.createElement('h1',{style:{fontSize:21,fontWeight:700,marginBottom:4}},'상품 등록'),
+      React.createElement('p',{style:{fontSize:13,color:'var(--text2)',marginBottom:22}},'네이버 스마트스토어 또는 쿠팡 URL을 붙여넣으면 전체 분양몰에 자동 등록됩니다'),
+      React.createElement('div',{className:'card',style:{marginBottom:22}},
+        React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'URL 자동 등록'),
+        msg&&React.createElement('div',{className:'fu',style:{background:'var(--green-bg)',border:'1px solid rgba(45,212,160,.2)',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:12,fontSize:13,color:'var(--green)'}},'✅ '+msg),
+        React.createElement('div',{style:{display:'flex',gap:10,marginBottom:10}},
+          React.createElement('input',{value:url,onChange:e=>setUrl(e.target.value),onKeyDown:e=>e.key==='Enter'&&addProd(),placeholder:'https://smartstore.naver.com/... 또는 https://www.coupang.com/vp/products/...'}),
+          React.createElement('button',{className:'btn bp',style:{minWidth:90,opacity:loading?.7:1},onClick:addProd},loading?'처리 중...':'자동 등록')
+        ),
+        React.createElement('div',{style:{display:'flex',gap:18,fontSize:12,color:'var(--text3)'}},React.createElement('span',null,'✓ 네이버 스마트스토어'),React.createElement('span',null,'✓ 쿠팡'),React.createElement('span',null,'✓ 수수료 10% 자동'))
+      ),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:22}},
+        ...[['등록 상품',products.length],['총 판매',products.reduce((s,p)=>s+(p.sales||0),0)],['이번 달 수수료','₩38,200'],['노출 분양몰','1,248']].map(([l,v],i)=>
+          React.createElement('div',{key:i,className:'mc'},React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:7}},l),React.createElement('div',{style:{fontSize:21,fontWeight:600}},v))
+        )
+      ),
+      React.createElement('div',{className:'card'},
+        React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'등록된 상품 ('+products.length+'개)'),
+        React.createElement('table',{className:'dt'},
+          React.createElement('thead',null,React.createElement('tr',null,...['상품명','출처','판매가','수수료','판매수','상태'].map(h=>React.createElement('th',{key:h},h)))),
+          React.createElement('tbody',null,
+            products.map(p=>React.createElement('tr',{key:p.id},
+              React.createElement('td',null,React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8}},React.createElement('span',{style:{fontSize:18}},p.img),React.createElement('span',{style:{fontSize:13}},p.name))),
+              React.createElement('td',null,React.createElement('span',{className:`tag ${p.src==='naver'?'tn':'tc'}`},p.src==='naver'?'네이버':'쿠팡')),
+              React.createElement('td',null,'₩'+P(p.price)),
+              React.createElement('td',{style:{color:'var(--orange)'}},'₩'+P(Math.floor(p.price*.1))),
+              React.createElement('td',{style:{color:'var(--text2)'}},p.sales||0),
+              React.createElement('td',null,React.createElement('span',{className:`badge ${p.status==='pending'?'bo':'bg'}`},p.status==='pending'?'검토중':'활성'))
+            ))
+          )
+        )
+      )
+    )
+  )
+}
+
+function Admin(){
+  const malls=useAppState(s=>s.malls);
+  const products=useAppState(s=>s.products);
+  const [tab,setTab]=useState('dashboard');
+  const [saved,setSaved]=useState(false);
+  const setPage=p=>setState(s=>({...s,page:p}));
+  const MONTHLY=[{m:'10월',rev:21.4,malls:820},{m:'11월',rev:28.6,malls:940},{m:'12월',rev:33.1,malls:1050},{m:'1월',rev:30.8,malls:1100},{m:'2월',rev:35.6,malls:1190},{m:'3월',rev:38.2,malls:1248}];
+  const TABS=[{id:'dashboard',l:'대시보드',ic:'📊'},{id:'malls',l:'분양몰 관리',ic:'🏪'},{id:'settle',l:'정산 관리',ic:'💳'},{id:'config',l:'설정',ic:'⚙️'}];
+
+  return React.createElement('div',{style:{minHeight:'100vh',display:'flex'}},
+    React.createElement('div',{className:'sidebar'},
+      React.createElement('div',{style:{padding:'0 16px 18px',borderBottom:'1px solid var(--border)',marginBottom:12}},React.createElement('div',{style:{fontSize:17,fontWeight:700}},React.createElement('span',{style:{color:'var(--accent)'}},'SELL'),'ZY'),React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},'관리자 패널')),
+      TABS.map(t=>React.createElement(NavBtn,{key:t.id,label:`${t.ic} ${t.l}`,active:tab===t.id,onClick:()=>setTab(t.id)})),
+      React.createElement('div',{style:{marginTop:'auto',padding:'14px 16px',borderTop:'1px solid var(--border)'}},React.createElement('button',{className:'btn bg2 bsm',onClick:()=>setPage('landing')},'← 홈'))
+    ),
+    React.createElement('div',{style:{flex:1,overflowY:'auto',padding:28}},
+      tab==='dashboard'&&React.createElement('div',{className:'fu'},
+        React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:22}},React.createElement('h1',{style:{fontSize:21,fontWeight:700}},'플랫폼 현황'),React.createElement('span',{className:'dot'})),
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:22}},
+          ...[['활성 분양몰','1,248','var(--accent)','+58 이번 달'],['이번 달 거래액','₩38.2M','var(--green)','+7.3%'],['등록 상품',products.length+'개','var(--text)','활성'],['구독료 수입','₩24.96M','var(--orange)','1,248×₩20k']].map(([l,v,c,s],i)=>
+            React.createElement('div',{key:i,className:'mc'},React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:7}},l),React.createElement('div',{style:{fontSize:21,fontWeight:600,color:c}},v),React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:3}},s))
+          )
+        ),
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'2fr 1fr',gap:18,marginBottom:18}},
+          React.createElement('div',{className:'card'},
+            React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'월별 거래액 (M)'),
+            React.createElement(ResponsiveContainer,{width:'100%',height:190},
+              React.createElement(BarChart,{data:MONTHLY},
+                React.createElement(XAxis,{dataKey:'m',tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false}),
+                React.createElement(YAxis,{tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false}),
+                React.createElement(Tooltip,{contentStyle:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,fontSize:12},formatter:v=>[`₩${v}M`]}),
+                React.createElement(Bar,{dataKey:'rev',fill:'#7C6EFA',radius:[4,4,0,0]})
+              )
+            )
+          ),
+          React.createElement('div',{className:'card'},
+            React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'분양몰 성장'),
+            React.createElement(ResponsiveContainer,{width:'100%',height:190},
+              React.createElement(LineChart,{data:MONTHLY},
+                React.createElement(XAxis,{dataKey:'m',tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false}),
+                React.createElement(YAxis,{tick:{fill:'#5C5968',fontSize:11},axisLine:false,tickLine:false}),
+                React.createElement(Tooltip,{contentStyle:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,fontSize:12}}),
+                React.createElement(Line,{type:'monotone',dataKey:'malls',stroke:'#2DD4A0',strokeWidth:2,dot:false})
+              )
+            )
+          )
+        ),
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'이번 달 수익 구조'),
+          React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}},
+            ...[['구독료 수입','₩24,960,000','65%','var(--accent)'],['공급자 수수료 10%','₩3,820,000','10%','var(--orange)'],['운영자 수익 3%','₩1,146,000','3%','var(--green)']].map(([l,v,pct,c])=>
+              React.createElement('div',{key:l,style:{padding:'14px 16px',background:'var(--bg3)',borderRadius:'var(--radius)',display:'flex',justifyContent:'space-between',alignItems:'center'}},
+                React.createElement('div',null,React.createElement('div',{style:{fontSize:11,color:'var(--text2)',marginBottom:4}},l),React.createElement('div',{style:{fontSize:15,fontWeight:600,color:c}},v)),
+                React.createElement('div',{style:{fontSize:18,fontWeight:700,color:c,opacity:.4}},pct)
+              )
+            )
+          )
+        )
+      ),
+      tab==='malls'&&React.createElement('div',{className:'fu'},
+        React.createElement('h1',{style:{fontSize:21,fontWeight:700,marginBottom:20}},'분양몰 관리 ('+malls.length+'개)'),
+        React.createElement('div',{className:'card'},
+          React.createElement('table',{className:'dt'},
+            React.createElement('thead',null,React.createElement('tr',null,...['운영자','SNS','가입일','이번 달 매출','수익 (3%)','상태'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,malls.map(m=>React.createElement('tr',{key:m.id},
+              React.createElement('td',{style:{fontWeight:500}},m.owner),
+              React.createElement('td',{style:{fontSize:12,color:'var(--text2)'}},m.sns),
+              React.createElement('td',{style:{fontSize:12,color:'var(--text2)'}},m.joinDate),
+              React.createElement('td',null,'₩'+P(m.revenue)),
+              React.createElement('td',{style:{color:'var(--green)',fontWeight:500}},'₩'+P(m.profit)),
+              React.createElement('td',null,React.createElement('span',{className:`badge ${m.status==='active'?'bg':'ba'}`},m.status==='active'?'활성':'신규'))
+            )))
+          )
+        )
+      ),
+      tab==='settle'&&React.createElement('div',{className:'fu'},
+        React.createElement('h1',{style:{fontSize:21,fontWeight:700,marginBottom:20}},'정산 관리'),
+        React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}},
+          ...[['정산 예정','₩8.46M'],['대상',''+malls.length+'명'],['완료 누적','₩21.3M'],['실패','3건']].map(([l,v],i)=>React.createElement('div',{key:i,className:'mc'},React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:7}},l),React.createElement('div',{style:{fontSize:21,fontWeight:600}},v)))
+        ),
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}},
+            React.createElement('div',{style:{fontSize:14,fontWeight:600}},'4월 10일 정산 예정'),
+            React.createElement('button',{className:'btn bp bsm'},'일괄 정산')
+          ),
+          React.createElement('table',{className:'dt'},
+            React.createElement('thead',null,React.createElement('tr',null,...['운영자','계좌','매출','수익','구독료','지급액'].map(h=>React.createElement('th',{key:h},h)))),
+            React.createElement('tbody',null,malls.map(m=>{
+              const pay=Math.max(0,m.profit-(m.revenue<20000?20000-m.revenue:0));
+              return React.createElement('tr',{key:m.id},
+                React.createElement('td',{style:{fontWeight:500}},m.owner),
+                React.createElement('td',{style:{fontSize:12,color:'var(--text2)'}},m.bankAccount||'****1234'),
+                React.createElement('td',null,'₩'+P(m.revenue)),
+                React.createElement('td',{style:{color:'var(--green)'}},'₩'+P(m.profit)),
+                React.createElement('td',{style:{color:'var(--text2)'}},'₩20,000'),
+                React.createElement('td',{style:{fontWeight:600,color:pay>0?'var(--green)':'var(--text3)'}},'₩'+P(pay))
+              )
+            }))
+          )
+        )
+      ),
+      tab==='config'&&React.createElement('div',{className:'fu',style:{maxWidth:480}},
+        React.createElement('h1',{style:{fontSize:21,fontWeight:700,marginBottom:20}},'플랫폼 설정'),
+        saved&&React.createElement('div',{style:{background:'var(--green-bg)',border:'1px solid rgba(45,212,160,.2)',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--green)'}},'✅ 저장되었습니다.'),
+        React.createElement('div',{className:'card',style:{marginBottom:14}},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'수수료 설정'),
+          React.createElement('div',{style:{marginBottom:14}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'공급자 수수료 (%)'),React.createElement('input',{type:'number',defaultValue:10})),
+          React.createElement('div',{style:{marginBottom:0}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'분양몰 운영자 수익 (%)'),React.createElement('input',{type:'number',defaultValue:3}))
+        ),
+        React.createElement('div',{className:'card',style:{marginBottom:14}},
+          React.createElement('div',{style:{fontSize:14,fontWeight:600,marginBottom:14}},'구독 및 정산'),
+          React.createElement('div',{style:{marginBottom:14}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'월 구독료 (₩)'),React.createElement('input',{type:'number',defaultValue:20000})),
+          React.createElement('div',{style:{marginBottom:0}},React.createElement('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'자동 정산일'),React.createElement('select',null,React.createElement('option',null,'매월 10일'),React.createElement('option',null,'매월 25일'),React.createElement('option',null,'매월 1일')))
+        ),
+        React.createElement('button',{className:'btn bp',style:{width:'100%'},onClick:()=>{setSaved(true);setTimeout(()=>setSaved(false),2000)}},'설정 저장')
+      )
+    )
+  )
+}
+
+// ---- ROUTER ----
+function App(){
+  const page=useAppState(s=>s.page);
+  const MAP={landing:Landing,signup:Signup,shop:Shop,myMall:MyMall,supplier:Supplier,admin:Admin};
+  const Page=MAP[page]||Landing;
+  return React.createElement(Page);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
