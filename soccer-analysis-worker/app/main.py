@@ -19,7 +19,7 @@ import traceback
 from fastapi import BackgroundTasks, FastAPI
 from pydantic import BaseModel
 
-from . import gcs, input_source, job_status
+from . import gcs, input_source, job_status, notify
 from .config import settings
 from .model_loader import resolve_model_path
 from .pipeline import analyze_video
@@ -99,15 +99,18 @@ def _run_job(req: AnalyzeRequest):
         video_uri = gcs.upload_file(out_video, f"{prefix}/annotated.mp4", "video/mp4")
         json_uri = gcs.upload_json(result, f"{prefix}/result.json")
 
-        job_status.mark_done(job_id, video_uri, json_uri, summary={
+        summary = {
             "possession": result["possession"],
             "players_count": len(result["players"]),
             "calibrated": result["calibrated"],
             "duration_sec": result.get("duration_sec"),
-        })
+        }
+        job_status.mark_done(job_id, video_uri, json_uri, summary=summary)
+        notify.report_done(job_id, summary)  # 회장님 자동보고
     except Exception as e:  # noqa: BLE001
         traceback.print_exc()
         job_status.mark_failed(job_id, f"{type(e).__name__}: {e}")
+        notify.report_failed(job_id, f"{type(e).__name__}: {e}")
     finally:
         for f in (local_in, out_video):
             try:

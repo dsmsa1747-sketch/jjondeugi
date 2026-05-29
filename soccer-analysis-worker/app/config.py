@@ -41,9 +41,12 @@ class Settings:
     FIRESTORE_COLLECTION = os.environ.get("FIRESTORE_COLLECTION", "analysisJobs")
     GCP_PROJECT = os.environ.get("GCP_PROJECT", "")
 
-    # 알림은 Google 전용(Firebase Cloud Messaging)으로 통일합니다.
-    # 워커는 외부에 직접 쏘지 않고 Firestore 상태만 갱신 →
-    # Firebase가 상태변경을 감지해 FCM 푸시(웹/앱)로 알립니다. (비구글 알림 미사용)
+    # ── 알림 정책 ────────────────────────────────────────
+    # (1) 학부모 완료 알림: Firestore 상태변경 → Firebase Cloud Messaging(FCM, Google) 앱푸시.
+    # (2) 회장님 자동보고: 메신저로 발송(자동화 목적). 텔레그램 기본, 교체 가능.
+    NOTIFY_PROVIDER = os.environ.get("NOTIFY_PROVIDER", "telegram")  # telegram | none
+    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
 settings = Settings()

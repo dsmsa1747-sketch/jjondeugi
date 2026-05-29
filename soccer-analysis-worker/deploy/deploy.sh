@@ -12,6 +12,10 @@ REGION="us-central1"                    # Cloud Run GPU 지원 리전 (L4 가능
 SERVICE="soccermom-yolo-worker"
 BUCKET="${PROJECT_ID}-soccermom"        # 영상/결과 저장 버킷 (없으면 아래서 생성)
 MODEL_GS="gs://${BUCKET}/models/best.pt"  # 학습된 모델 위치 (없으면 빈 값으로 두면 테스트 폴백)
+# 회장님 자동보고(텔레그램). 안 쓰면 NOTIFY_PROVIDER=none 으로.
+NOTIFY_PROVIDER="telegram"
+TELEGRAM_BOT_TOKEN=""   # BotFather 발급 토큰
+TELEGRAM_CHAT_ID=""     # 본인 챗 ID
 # ─────────────────────────────────────────────────────────────
 
 gcloud config set project "$PROJECT_ID"
@@ -40,7 +44,7 @@ gcloud run deploy "$SERVICE" \
   --min-instances 0 --max-instances 3 \
   --concurrency 1 \
   --timeout 1800 \
-  --set-env-vars "GCP_PROJECT=${PROJECT_ID},GCS_BUCKET=${BUCKET},MODEL_PATH=${MODEL_GS},FIRESTORE_COLLECTION=analysisJobs" \
+  --set-env-vars "GCP_PROJECT=${PROJECT_ID},GCS_BUCKET=${BUCKET},MODEL_PATH=${MODEL_GS},FIRESTORE_COLLECTION=analysisJobs,NOTIFY_PROVIDER=${NOTIFY_PROVIDER},TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN},TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}" \
   --no-allow-unauthenticated
 
 echo "✅ 배포 완료. 서비스 URL:"
