@@ -649,7 +649,7 @@ async def fill_options(frame, product: dict) -> bool:
         except Exception:
             pass
 
-    await frame.wait_for_timeout(500)
+    await asyncio.sleep(0.5)
 
     # 옵션1 이름/가격 입력
     ok1 = await _try_fill(frame, [
@@ -724,7 +724,7 @@ async def submit_form_and_get_uid(page, frame) -> str | None:
 
     if not submitted:
         print("[등록] 제출 버튼을 찾지 못해 Enter로 시도", flush=True)
-        await frame.keyboard.press("Enter")
+        await page.keyboard.press("Enter")
 
     # 페이지 이동 대기
     await page.wait_for_timeout(5_000)
