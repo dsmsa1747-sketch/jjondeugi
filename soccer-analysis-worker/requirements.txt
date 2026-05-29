@@ -1,0 +1,27 @@
+# ── SoccerMom 정밀분석(YOLO) 워커 의존성 ──
+# Cloud Run + GPU(NVIDIA L4) 환경 기준.
+
+# 웹 서버 (Cloud Tasks / HTTP 트리거 수신)
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# 핵심 비전: YOLO 감지 + ByteTrack 추적 + 어노테이션
+ultralytics==8.3.55
+supervision==0.25.1
+
+# 영상/수치 처리
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+scikit-learn==1.6.0      # KMeans 팀(유니폼 색) 분류
+
+# YouTube 링크 입력 지원 (선택)
+yt-dlp==2024.12.13
+
+# Google 인프라 (전부 Google로 통일)
+google-cloud-storage==2.19.0     # 입력/결과 영상 저장
+google-cloud-firestore==2.20.0   # 분석 작업 상태(분석중→완료)
+
+# 주의:
+#  - torch / torchvision 은 Dockerfile의 CUDA 베이스 이미지에서 GPU 빌드로 설치합니다
+#    (requirements 로 받으면 CPU 버전이 깔려 GPU를 못 씁니다).
