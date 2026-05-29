@@ -1,65 +1,78 @@
-// 빠른 코칭분석 API — Gemini로 유튜브 영상 분석
+// 빠른 코칭분석 API — 로그인 필수 + 축구 영상 판별 + 결제 후 결과 공개
+//  - Gemini가 '실제 영상'을 보고 축구 경기인지 먼저 판별 (아니면 거부, 과금 안 함)
+//  - 분석 결과는 결제(검증) 후에만 공개 (결제 전 무료 분석 차단)
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { randomUUID } from "crypto";
 import { analyzeFast } from "@/lib/gemini";
 import { createJob } from "@/lib/firestoreJobs";
-import { randomUUID } from "crypto";
+import { getUserEmail, isAdmin } from "@/lib/access";
+import { getPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions).catch(() => null);
-
-    const body = await req.json();
-    const { youtubeUrl } = body;
-
-    if (!youtubeUrl) {
+    // 1) 로그인 필수
+    const email = await getUserEmail();
+    if (!email) {
       return NextResponse.json(
-        { error: "youtubeUrl 이 필요합니다." },
-        { status: 400 }
+        { error: "로그인이 필요합니다.", code: "LOGIN_REQUIRED" },
+        { status: 401 }
       );
     }
 
-    // GEMINI_API_KEY 없으면 503 반환 (가짜 데이터 금지)
+    const { youtubeUrl } = await req.json();
+    if (!youtubeUrl) {
+      return NextResponse.json({ error: "youtubeUrl 이 필요합니다." }, { status: 400 });
+    }
+
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        {
-          error: "GEMINI_API_KEY가 설정되지 않았습니다. 서비스를 이용하려면 관리자에게 문의하세요.",
-          code: "GEMINI_NOT_CONFIGURED",
-        },
+        { error: "분석 서비스가 아직 설정되지 않았습니다. 관리자에게 문의하세요.", code: "GEMINI_NOT_CONFIGURED" },
         { status: 503 }
       );
     }
 
-    const jobId = randomUUID();
+    // 2) 실제 영상 분석 + 축구 판별
+    const analysis = await analyzeFast(youtubeUrl);
 
-    // Firestore에 작업 기록 (userEmail 매핑)
+    // 3) 축구 영상이 아니면 거부 (작업 생성/과금 없음)
+    if (!analysis.is_soccer) {
+      return NextResponse.json(
+        {
+          error: "축구 경기/훈련 영상으로 보이지 않습니다. 축구 영상으로 다시 시도해 주세요.",
+          code: "NOT_SOCCER",
+          reason: analysis.reason || null,
+        },
+        { status: 422 }
+      );
+    }
+
+    const amount = getPrice("fast").amount;
+    const jobId = randomUUID();
+    const admin = isAdmin(email);
+
+    // 4) 관리자(무료): 즉시 공개 / 일반: 결제 전까지 결과 숨김(pendingResult)
     await createJob(jobId, {
       mode: "fast",
       video: youtubeUrl,
-      userEmail: session?.user?.email || null,
-      status: "processing",
-    }).catch((e) => {
-      // Firestore 없어도 분석은 진행 (로깅만)
-      console.warn("[analyze-fast] Firestore 기록 실패 (무시):", e.message);
+      userEmail: email,
+      price: amount,
+      status: admin ? "done" : "awaiting_payment",
+      result: admin ? analysis : null,
+      pendingResult: admin ? null : analysis,
     });
 
-    // Gemini 분석 실행
-    const result = await analyzeFast(youtubeUrl);
-
-    // 완료 상태로 업데이트
-    await createJob(jobId, {
-      mode: "fast",
-      video: youtubeUrl,
-      userEmail: session?.user?.email || null,
-      status: "done",
-      result,
-    }).catch(() => {});
-
-    return NextResponse.json({ jobId, status: "done", result });
+    if (admin) {
+      return NextResponse.json({ jobId, status: "done", result: analysis, free: true });
+    }
+    return NextResponse.json({
+      jobId,
+      status: "awaiting_payment",
+      requiresPayment: true,
+      amount,
+    });
   } catch (e) {
     console.error("[analyze-fast] error:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });

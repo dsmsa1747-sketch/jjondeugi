@@ -26,6 +26,15 @@ export async function createJob(jobId, data) {
   return jobId;
 }
 
+// 작업 부분 갱신 (병합) — 상태/결과 업데이트용
+export async function updateJob(jobId, data) {
+  await getDb()
+    .collection(COLLECTION)
+    .doc(jobId)
+    .set({ ...data, updatedAt: new Date().toISOString() }, { merge: true });
+  return jobId;
+}
+
 // 작업 조회 (웹 결과화면 폴링용)
 export async function getJob(jobId) {
   const snap = await getDb().collection(COLLECTION).doc(jobId).get();

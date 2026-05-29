@@ -22,13 +22,18 @@ export async function GET(_req, { params }) {
       error: job.error ?? null,
     };
 
-    // 완료면 결과 영상(서명URL) + 상세 JSON 동봉
+    // 완료면 결과 공개.
+    //  - precise(워커): 결과 영상(서명URL) + GCS JSON
+    //  - fast(Gemini): 결제 후 job.result 에 저장된 결과
+    // ※ pendingResult(결제 전 보관분)는 절대 노출하지 않음 (여기서 안 읽음)
     if (job.status === "done") {
       if (job.resultVideoUri) {
         out.videoUrl = await createReadSignedUrl(job.resultVideoUri).catch(() => null);
       }
       if (job.resultJsonUri) {
         out.result = await readJson(job.resultJsonUri).catch(() => null);
+      } else if (job.result) {
+        out.result = job.result; // fast 결과
       }
     }
 

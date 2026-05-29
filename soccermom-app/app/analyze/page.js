@@ -70,6 +70,10 @@ function AnalyzeContent() {
       setErr("유튜브 링크를 입력해 주세요.");
       return;
     }
+    if (!session) {
+      setErr("분석은 로그인 후 이용할 수 있습니다. 먼저 로그인해 주세요.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -79,10 +83,22 @@ function AnalyzeContent() {
         body: JSON.stringify({ youtubeUrl }),
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      // 결제 페이지로 이동하기 전에 결과를 미리 요청하고 싶다면 여기서 처리
-      // 지금은 결제 후 결과 표시 흐름 유지
-      router.push(`/pay?mode=fast&jobId=${data.jobId}&url=${encodeURIComponent(youtubeUrl)}`);
+      if (!res.ok) {
+        if (data.code === "NOT_SOCCER") {
+          setErr("⚠️ 축구 경기/훈련 영상으로 보이지 않습니다. 축구 영상으로 다시 시도해 주세요.");
+        } else if (data.code === "LOGIN_REQUIRED") {
+          setErr("로그인이 필요합니다.");
+        } else {
+          setErr(data.error || "분석 요청에 실패했습니다.");
+        }
+        return;
+      }
+      // 관리자(무료)면 결과로, 일반은 결제 페이지로
+      if (data.free) {
+        router.push(`/result/${data.jobId}?mode=fast`);
+      } else {
+        router.push(`/pay?mode=fast&jobId=${data.jobId}`);
+      }
     } catch (e) {
       setErr(String(e.message));
     } finally {
@@ -223,6 +239,10 @@ function AnalyzeContent() {
             <div style={{ marginTop: 16 }}>
               <button
                 onClick={async () => {
+                  if (!session) {
+                    setErr("분석은 로그인 후 이용할 수 있습니다. 먼저 로그인해 주세요.");
+                    return;
+                  }
                   setBusy(true);
                   setErr(null);
                   try {
@@ -232,8 +252,12 @@ function AnalyzeContent() {
                       body: JSON.stringify({ youtubeUrl }),
                     });
                     const data = await res.json();
-                    if (data.error) throw new Error(data.error);
-                    router.push(`/pay?mode=precise&jobId=${data.jobId}`);
+                    if (!res.ok) {
+                      setErr(data.error || "분석 요청에 실패했습니다.");
+                      return;
+                    }
+                    if (data.free) router.push(`/result/${data.jobId}?mode=precise`);
+                    else router.push(`/pay?mode=precise&jobId=${data.jobId}`);
                   } catch (e) {
                     setErr(String(e.message));
                   } finally {

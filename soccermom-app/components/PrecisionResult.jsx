@@ -68,6 +68,13 @@ export default function PrecisionResult({ jobId }) {
     <div>
       <h2 style={{ marginBottom: 16 }}>정밀분석 결과</h2>
 
+      {/* 축구 영상이 아닐 가능성 경고 (선수 거의 미감지) */}
+      {result.is_soccer === false && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: 12, marginBottom: 16, color: "#b91c1c" }}>
+          ⚠️ {result.warning || "축구 영상으로 보이지 않아 분석 신뢰도가 낮습니다."}
+        </div>
+      )}
+
       {data.videoUrl && (
         <video src={data.videoUrl} controls style={{ width: "100%", maxWidth: 720, borderRadius: 8, marginBottom: 16 }} />
       )}

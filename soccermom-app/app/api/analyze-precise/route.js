@@ -1,34 +1,39 @@
-// 정밀분석 요청 API — 작업 생성 + Cloud Tasks 큐 등록
-// (무거운 YOLO 분석은 Cloud Run 워커가 비동기로 처리)
+// 정밀분석 요청 API — 로그인 필수 + 결제 후에만 워커 실행
+//  - 결제 전에는 작업만 'awaiting_payment'로 등록 (Cloud Tasks 큐에 넣지 않음)
+//  - 결제 검증(pay/confirm) 통과 후 실제로 워커에 작업을 전달
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { createJob } from "@/lib/firestoreJobs";
 import { enqueueAnalyze } from "@/lib/cloudTasks";
+import { getUserEmail, isAdmin } from "@/lib/access";
+import { getPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    // 로그인 사용자 확인 (결제/소유자 매핑용)
-    const session = await getServerSession(authOptions).catch(() => null);
+    // 1) 로그인 필수
+    const email = await getUserEmail();
+    if (!email) {
+      return NextResponse.json(
+        { error: "로그인이 필요합니다.", code: "LOGIN_REQUIRED" },
+        { status: 401 }
+      );
+    }
 
     const body = await req.json();
     const {
-      youtubeUrl,    // 유튜브 링크 또는
-      gsUri,         // 이미 업로드된 gs:// 경로
-      sourcePoints,  // (선택) 원근변환 보정 4점 [[x,y]*4]
-      targetPoint,   // (선택) 클릭 선수지정 화면좌표 [x,y] (영상 원본 픽셀)
-      targetTime,    // (선택) 클릭한 시점(초)
-      targetMeta,    // (선택) { name, number, jersey }
-      analysisMode,  // (선택) "match" | "practice" — 기본값 "match"
+      youtubeUrl,
+      gsUri,
+      sourcePoints,
+      targetPoint,
+      targetTime,
+      targetMeta,
+      analysisMode,
     } = body;
 
-    // 분석모드: 공식경기(팀 구분) vs 연습경기(같은 조끼, 개인 추적만)
     const resolvedMode = analysisMode === "practice" ? "practice" : "match";
-
     const video = gsUri || youtubeUrl;
     if (!video) {
       return NextResponse.json(
@@ -37,19 +42,12 @@ export async function POST(req) {
       );
     }
 
+    const amount = getPrice("precise").amount;
     const jobId = randomUUID();
+    const admin = isAdmin(email);
 
-    // 1) Firestore에 작업 등록 (status=queued)
-    await createJob(jobId, {
-      mode: "precise",
-      video,
-      userEmail: session?.user?.email || null,
-      targetMeta: targetMeta || null,
-      analysisMode: resolvedMode,
-    });
-
-    // 2) Cloud Tasks로 워커에 분석 작업 전달
-    await enqueueAnalyze({
+    // 워커에 넘길 작업 파라미터 (결제 후 사용)
+    const workerPayload = {
       job_id: jobId,
       video,
       source_points: sourcePoints || null,
@@ -57,9 +55,31 @@ export async function POST(req) {
       target_time: targetTime ?? null,
       target_meta: targetMeta || null,
       analysis_mode: resolvedMode,
+    };
+
+    // 2) 작업 등록 (결제 전: awaiting_payment, 파라미터 저장)
+    await createJob(jobId, {
+      mode: "precise",
+      video,
+      userEmail: email,
+      targetMeta: targetMeta || null,
+      analysisMode: resolvedMode,
+      price: amount,
+      status: admin ? "queued" : "awaiting_payment",
+      workerPayload,
     });
 
-    return NextResponse.json({ jobId, status: "queued" });
+    // 3) 관리자(무료)는 즉시 큐 등록, 일반은 결제 후 등록
+    if (admin) {
+      await enqueueAnalyze(workerPayload);
+      return NextResponse.json({ jobId, status: "queued", free: true });
+    }
+    return NextResponse.json({
+      jobId,
+      status: "awaiting_payment",
+      requiresPayment: true,
+      amount,
+    });
   } catch (e) {
     console.error("[analyze-precise] error:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });

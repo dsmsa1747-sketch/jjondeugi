@@ -119,6 +119,8 @@ def analyze_video(
     frame_idx = 0
     highlights: list[dict] = []
     last_holder: int | None = None
+    frames_with_players = 0   # 축구영상 판별용 — 선수가 잡힌 프레임 수
+    ball_frames = 0           # 공이 잡힌 프레임 수
 
     while True:
         ok, frame = cap.read()
@@ -162,8 +164,13 @@ def analyze_video(
                 ),
             )
 
+        if players:
+            frames_with_players += 1
+
         # 공
         ball_bbox = ball_det.xyxy[0].tolist() if len(ball_det) else None
+        if ball_bbox is not None:
+            ball_frames += 1
 
         # 선수별 처리
         for tid, p in players.items():
@@ -230,12 +237,27 @@ def analyze_video(
     # practice 모드에서는 팀 점유율이 무의미 → 0 반환
     pct = possession.percentages() if analysis_mode == "match" else {"team1": 0, "team2": 0}
 
+    # 축구 영상 판별: 선수가 충분히 잡혔는지로 판단 (공 인식은 약하므로 보조 지표)
+    processed = max(frame_idx, 1)
+    player_ratio = frames_with_players / processed
+    is_soccer = player_ratio >= 0.30 and len(players_summary) >= 2
+    warning = None
+    if not is_soccer:
+        warning = (
+            "선수가 거의 감지되지 않았습니다. 축구 경기/훈련 영상이 아니거나, "
+            "화질·촬영각도·거리 때문에 분석이 어려운 영상일 수 있습니다."
+        )
+
     result = {
         "fps": round(fps, 2),
         "frames_processed": frame_idx,
         "duration_sec": round(frame_idx / fps, 1) if fps else None,
         "calibrated": bool(view.calibrated),
         "analysis_mode": analysis_mode,  # 호출 측이 모드를 명확히 알 수 있도록 항상 포함
+        "is_soccer": bool(is_soccer),
+        "ball_detected_frames": ball_frames,
+        "player_frame_ratio": round(player_ratio, 3),
+        "warning": warning,
         "possession": pct,
         "players": players_summary,
         "highlights": highlights[:30],
