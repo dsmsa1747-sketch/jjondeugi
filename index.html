@@ -5,8 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#16A34A" />
 <title>콩나물 — 신선함을 잇다</title>
-<meta name="description" content="콩나물 — 신선 농산물·식품 커머스. 회원가입·결제·주문까지 한 곳에서." />
+<meta name="description" content="콩나물 — 무자본 분양 신선 커머스. SNS만으로 내 쇼핑몰, 회원가입·결제·주문·정산까지 한 곳에서." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E" />
+<!-- PWA(설치형 앱) -->
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="콩나물" />
+<meta name="mobile-web-app-capable" content="yes" />
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <!-- 토스페이먼츠 결제 SDK (실 키 설정 시에만 사용) -->
 <script src="https://js.tosspayments.com/v1/payment"></script>
@@ -190,13 +197,31 @@ const CONFIG = {
 
 /* ---------- 유틸 ---------- */
 const $ = (s,el=document)=>el.querySelector(s);
-const won = n => '₩' + Number(n||0).toLocaleString('ko-KR');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls = {
   get:(k,d)=>{try{return JSON.parse(localStorage.getItem('kn_'+k))??d}catch{return d}},
   set:(k,v)=>localStorage.setItem('kn_'+k,JSON.stringify(v)),
 };
+
+/* ---------- 통화 & 다국어 ---------- */
+const prefs = { cur: ls.get('cur','KRW'), lang: ls.get('lang','ko') };
+const FX = { KRW:1, USD:1/1350 }; // 표시용 환율(원→달러)
+function won(n){
+  const v = Number(n||0);
+  if(prefs.cur==='USD') return '$' + (v*FX.USD).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return '₩' + Math.round(v).toLocaleString('ko-KR');
+}
+const I18N = {
+  ko:{home:'홈',search:'검색',live:'라이브',orders:'주문',my:'MY',
+      buyNow:'바로 구매',addCart:'장바구니',pay:'결제하기',login:'로그인 / 회원가입',
+      ai:'AI 마케팅',track:'배송 추적',getShop:'무료로 내 쇼핑몰 분양받기',keepShop:'쇼핑 계속하기'},
+  en:{home:'Home',search:'Search',live:'Live',orders:'Orders',my:'My',
+      buyNow:'Buy now',addCart:'Add to cart',pay:'Pay',login:'Sign in / up',
+      ai:'AI Marketing',track:'Track',getShop:'Get your free shop',keepShop:'Keep shopping'},
+};
+function t(k){ return (I18N[prefs.lang]||I18N.ko)[k] || (I18N.ko[k]||k); }
+function setPref(k,v){ prefs[k]=v; ls.set(k,v); render(); }
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
 function openSheet(html){$('#sheet').innerHTML='<div class="grab"></div>'+html;$('#sheetbg').classList.add('show')}
 function closeSheet(){$('#sheetbg').classList.remove('show')}
@@ -368,7 +393,7 @@ function render(){
   const v=$('#view');
   const R={ home:HomeView, search:SearchView, live:LiveView, orders:OrdersView, profile:ProfileView,
             detail:DetailView, cart:CartView, checkout:CheckoutView, login:LoginView, signup:SignupView,
-            paySuccess:PaySuccessView, owner:OwnerView };
+            paySuccess:PaySuccessView, owner:OwnerView, ai:AiMarketingView, orderDetail:OrderDetailView };
   (R[state.page]||HomeView)(v);
   bindTabs();
 }
@@ -376,8 +401,8 @@ function render(){
 function headerHTML(){
   const titles={search:'검색',live:'라이브',orders:'주문내역',profile:'마이페이지',
     cart:'장바구니',checkout:'주문/결제',login:'로그인',signup:'회원가입',
-    detail:'',paySuccess:'결제 완료',owner:'내 쇼핑몰'};
-  const backPages=['detail','cart','checkout','login','signup','owner'];
+    detail:'',paySuccess:'결제 완료',owner:'내 쇼핑몰',ai:'AI 마케팅',orderDetail:'주문 상세'};
+  const backPages=['detail','cart','checkout','login','signup','owner','ai','orderDetail'];
   if(state.page==='home'){
     return `<div class="header">
       <div class="logo">🌱 ${CONFIG.BRAND}</div><div class="spacer"></div>
@@ -396,7 +421,7 @@ function cartBadge(){ const n=cartCount(); return n?`<span class="badge-count">$
 function back(){ go('home'); }
 
 function tabbarHTML(){
-  const tabs=[['home','🏠','홈'],['search','🔍','검색'],['live','🎥','라이브'],['orders','📦','주문'],['profile','👤','MY']];
+  const tabs=[['home','🏠',t('home')],['search','🔍',t('search')],['live','🎥',t('live')],['orders','📦',t('orders')],['profile','👤',t('my')]];
   return `<div class="tabbar">${tabs.map(([k,ic,l])=>
     `<button class="tab ${state.page===k?'active':''}" data-tab="${k}"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>`;
 }
@@ -528,8 +553,9 @@ function OrdersView(v){
   v.innerHTML='<div id="ol"></div>';
   api('listOrders').then(list=>{
     if(!list.length){ $('#ol').innerHTML='<div class="empty"><div class="ee">📦</div><div class="et">주문 내역이 없어요</div><div class="es">마음에 드는 상품을 담아보세요</div></div>'; return; }
+    state._orders=list;
     $('#ol').innerHTML=list.map(o=>`
-      <div class="card" style="margin:16px 16px 0">
+      <div class="card" style="margin:16px 16px 0;cursor:pointer" onclick="openOrder('${o.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;color:var(--text3)">${new Date(o.createdAt).toLocaleDateString('ko-KR')} · ${esc(o.id)}</span>
           <span class="pill ${o.status==='결제완료'?'g':o.status==='배송완료'?'b':'o'}">${esc(o.status)}</span>
@@ -540,8 +566,49 @@ function OrdersView(v){
         </div>`).join('')}
         <div class="hr" style="margin:4px 0 12px"></div>
         <div style="display:flex;justify-content:space-between;font-weight:700"><span>결제금액</span><span>${won(o.amount)}</span></div>
+        <div style="text-align:right;font-size:12px;color:var(--cta);margin-top:8px">${t('track')} ›</div>
       </div>`).join('') + '<div style="height:16px"></div>';
   });
+}
+function openOrder(id){ state.orderId=id; go('orderDetail'); }
+
+/* ---------- 주문 상세 + 배송 추적 ---------- */
+function OrderDetailView(v){
+  if(!state.user){ return requireLogin(v,'주문 상세는 로그인 후 확인 가능해요'); }
+  const render2=(o)=>{
+    if(!o){ v.innerHTML='<div class="empty"><div class="ee">❓</div><div class="et">주문을 찾을 수 없어요</div></div>'; return; }
+    const steps=['결제완료','상품준비','배송중','배송완료'];
+    const cur=Math.max(0, steps.indexOf(o.status==='결제대기'?'결제완료':o.status));
+    const sub=(o.items||[]).reduce((s,it)=>s+it.price*it.qty,0);
+    v.innerHTML=`
+      <div class="sec"><span class="pill ${o.status==='배송완료'?'b':'g'}">${esc(o.status)}</span>
+        <div style="font-size:13px;color:var(--text3);margin-top:8px">주문번호 ${esc(o.id)} · ${new Date(o.createdAt).toLocaleString('ko-KR')}</div></div>
+      <div class="sec" style="padding-top:0">
+        <div class="card">${steps.map((s,i)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+            <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background:${i<=cur?'var(--primary)':'var(--border2)'}">${i<=cur?'✓':i+1}</div>
+            <div style="font-weight:${i===cur?'700':'500'};color:${i<=cur?'var(--text)':'var(--text3)'}">${s}</div>
+          </div>${i<steps.length-1?`<div style="width:2px;height:10px;background:${i<cur?'var(--primary)':'var(--border)'};margin-left:11px"></div>`:''}`).join('')}
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sec"><div class="sec-title" style="font-size:15px">주문 상품</div></div>
+      ${(o.items||[]).map(it=>`<div class="row"><div class="rthumb">${it.emoji||'📦'}</div>
+        <div class="rbody"><div class="rtitle">${esc(it.name)}</div><div class="rsub">${won(it.price)} · ${it.qty}개</div></div>
+        <div class="rright" style="font-weight:700">${won(it.price*it.qty)}</div></div>`).join('')}
+      <div class="sec">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>상품금액</span><span>${won(sub)}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>배송비</span><span>${won(Math.max(0,o.amount-sub))}</span></div>
+        <div class="hr" style="margin:10px 0"></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800"><span>결제금액</span><span style="color:var(--primary)">${won(o.amount)}</span></div>
+      </div>
+      ${o.ship&&o.ship.addr?`<div class="sec" style="padding-top:0"><div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:6px">배송지</div>
+        <div style="font-size:13px;color:var(--text2)">${esc(o.ship.name||'')} ${esc(o.ship.phone||'')}<br>${esc(o.ship.addr||'')}<br><span style="color:var(--text3)">${esc(o.ship.memo||'')}</span></div></div></div>`:''}`;
+  };
+  const cached=(state._orders||[]).find(o=>o.id===state.orderId);
+  if(cached){ render2(cached); }
+  else { v.innerHTML='<div class="empty"><div class="skel" style="height:120px;border-radius:16px;margin:16px"></div></div>';
+    api('listOrders').then(list=>{ state._orders=list; render2(list.find(o=>o.id===state.orderId)); }); }
 }
 
 /* ---------- 마이페이지 ---------- */
@@ -560,13 +627,27 @@ function ProfileView(v){
         <div class="menu-row" onclick="go('orders')"><span class="mic">📦</span>주문/배송 내역<span class="arrow">›</span></div>
         <div class="menu-row" onclick="go('cart')"><span class="mic">🛒</span>장바구니<span class="arrow">›</span></div>
         <div class="menu-row" onclick="goOwner()"><span class="mic">🏪</span>${u.role==='owner'?'내 쇼핑몰 · 수익 대시보드':'무료 분양받기'}<span class="arrow">›</span></div>
-        <div class="menu-row" onclick="toast('준비 중입니다')"><span class="mic">⚙️</span>설정<span class="arrow">›</span></div>
+        <div class="menu-row" onclick="goAi()"><span class="mic">🤖</span>${t('ai')}<span class="arrow">›</span></div>
       </div>
     </div>
     <div class="sec" style="padding-top:0">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:14px;font-weight:600">언어 / Language</span>
+          <span>${[['ko','한국어'],['en','EN']].map(([k,l])=>`<button class="chip ${prefs.lang===k?'on':''}" style="margin-left:6px" onclick="setPref('lang','${k}')">${l}</button>`).join('')}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:14px;font-weight:600">통화 / Currency</span>
+          <span>${[['KRW','₩ KRW'],['USD','$ USD']].map(([k,l])=>`<button class="chip ${prefs.cur===k?'on':''}" style="margin-left:6px" onclick="setPref('cur','${k}')">${l}</button>`).join('')}</span>
+        </div>
+      </div>
+    </div>
+    <div class="sec" style="padding-top:0">
+      <button class="btn line" id="installBtn" style="display:none;margin-bottom:10px" onclick="promptInstall()">📲 홈 화면에 앱 설치</button>
       <button class="btn line" onclick="doLogout()">로그아웃</button>
       ${hasBackend()?'':'<div class="notice" style="margin:14px 0 0">⚙️ 현재 <b>데모 모드</b>로 동작 중입니다. 실서비스 연결은 SETUP 가이드를 참고하세요.</div>'}
     </div>`;
+  if(window._deferredPrompt){ const b=$('#installBtn'); if(b) b.style.display='flex'; }
 }
 function requireLogin(v,msg){
   v.innerHTML=`<div class="empty"><div class="ee">🔐</div><div class="et">로그인이 필요해요</div><div class="es">${esc(msg)}</div>
@@ -588,11 +669,29 @@ function DetailView(v){
     <div class="hr"></div>
     <div class="sec"><div style="font-weight:700;margin-bottom:8px">상품 설명</div>
       <div style="color:var(--text2);font-size:14px;line-height:1.7">${esc(p.desc||'')}</div></div>
+    <div class="hr"></div>
+    <div class="sec">
+      <div style="font-weight:700;margin-bottom:4px">수익 분배 구조</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">이 상품 1개 판매 시 (오너 분양몰 기준)</div>
+      ${splitTable(p.price)}
+    </div>
     <div class="notice">🚚 ${won(CONFIG.FREE_SHIP_OVER)} 이상 구매 시 무료배송 · 오늘 주문 시 내일 도착</div>
     <div class="fixedbar">
-      <button class="btn line" style="flex:1" onclick="addToCart('${p.id}');">장바구니</button>
-      <button class="btn primary" style="flex:1.4" onclick="buyNow('${p.id}')">바로 구매</button>
+      <button class="btn line" style="flex:1" onclick="addToCart('${p.id}');">${t('addCart')}</button>
+      <button class="btn primary" style="flex:1.4" onclick="buyNow('${p.id}')">${t('buyNow')}</button>
     </div>`;
+}
+function splitTable(price){
+  const S=CONFIG.SPLIT;
+  const rows=[['브랜드사',S.brand,'var(--text2)'],['콩나물(플랫폼)',S.platform,'var(--cta)'],['오너 캐시백',S.owner,'var(--primary)']];
+  const bar=`<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:12px">
+    <div style="width:${S.brand*100}%;background:var(--border2)"></div>
+    <div style="width:${S.platform*100}%;background:var(--cta)"></div>
+    <div style="width:${S.owner*100}%;background:var(--primary)"></div></div>`;
+  return `<div class="card" style="padding:14px">${bar}${rows.map(([l,r,c])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0">
+      <span style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:2px;background:${c};display:inline-block"></span>${l} <b style="color:${c}">${Math.round(r*100)}%</b></span>
+      <b>${won(price*r)}</b></div>`).join('')}</div>`;
 }
 function addToCart(id,qty=1,silent=false){
   const c=state.cart.slice(); const f=c.find(i=>i.id===id);
@@ -805,7 +904,8 @@ function OwnerView(v){
           </div>
         </div>
         <div class="notice" style="margin:0 0 12px">💰 정산은 배송완료 <b>D+7</b> 자동 지급, 출금 시 <b>3.3% 원천징수</b>가 적용됩니다.</div>
-        <button class="btn primary" onclick="openWithdraw(${s.available})">출금 신청하기</button>
+        <button class="btn primary" style="margin-bottom:10px" onclick="openWithdraw(${s.available})">출금 신청하기</button>
+        <button class="btn line" onclick="goAi()">🤖 ${t('ai')}</button>
       </div>
       <div class="sec" style="padding-top:4px"><div class="sec-title" style="font-size:15px">출금 내역</div></div>
       <div id="wl"></div>`;
@@ -859,6 +959,40 @@ async function submitWithdraw(available){
   catch(e){ toast(e.message); }
 }
 
+/* ---------- AI 마케팅 (SNS 자동 발행 일정) ---------- */
+const SNS = [['instagram','📸','Instagram'],['x','𝕏','X (Twitter)'],['tiktok','🎵','TikTok'],['threads','@','Threads']];
+function AiMarketingView(v){
+  if(!state.user){ return requireLogin(v,'AI 마케팅은 로그인 후 이용 가능해요'); }
+  const sched=ls.get('ai_posts',[
+    {id:'a1',ch:'instagram',title:'제주 감귤 산지 라이브 예고',when:'오늘 18:00',status:'예약'},
+    {id:'a2',ch:'tiktok',title:'콩나물 키우기 15초 숏폼',when:'오늘 20:30',status:'예약'},
+    {id:'a3',ch:'x',title:'무농약 콩나물 정기배송 펀딩 D-7',when:'내일 09:00',status:'초안'},
+  ]);
+  ls.set('ai_posts',sched);
+  v.innerHTML=`
+    <div class="hero" style="background:linear-gradient(135deg,#7C3AED,#1B64DA)">
+      <h2 style="font-size:18px">AI 마케팅 스튜디오</h2>
+      <p>Claude AI가 4개 채널 콘텐츠를 자동 생성·발행</p><div class="emoji">🤖</div></div>
+    <div class="scroll-x">${SNS.map(([k,e,n])=>`<div class="chip"><span>${e}</span>${n}</div>`).join('')}</div>
+    <div class="sec" style="padding-top:4px">
+      <button class="btn cta" onclick="aiGenerate()">✨ AI로 이번 주 콘텐츠 생성</button>
+    </div>
+    <div class="sec" style="padding-top:0"><div class="sec-title" style="font-size:15px">발행 일정</div></div>
+    <div id="ail"></div>`;
+  const chMeta=k=>SNS.find(s=>s[0]===k)||['','📣',k];
+  $('#ail').innerHTML=sched.map(a=>{ const [,e,n]=chMeta(a.ch); return `
+    <div class="row"><div class="rthumb" style="font-size:24px">${e}</div>
+      <div class="rbody"><div class="rtitle">${esc(a.title)}</div><div class="rsub">${n} · ${esc(a.when)}</div></div>
+      <div class="rright"><span class="pill ${a.status==='예약'?'b':'o'}">${esc(a.status)}</span>
+        <div style="margin-top:8px"><button class="btn sub sm" onclick="aiPublish('${a.id}')">발행</button></div></div></div>`; }).join('');
+}
+function aiGenerate(){ toast('🤖 AI가 콘텐츠 초안을 생성했어요 (데모)'); }
+function aiPublish(id){
+  const sched=ls.get('ai_posts',[]); const a=sched.find(x=>x.id===id); if(a){a.status='발행완료';} ls.set('ai_posts',sched);
+  toast('📣 발행 예약 완료'); render();
+}
+function goAi(){ if(!state.user){ go('login'); return; } go('ai'); }
+
 /* ============================================================
    부팅 — 결제 리다이렉트 처리 + 세션 복구
    ============================================================ */
@@ -881,6 +1015,21 @@ async function boot(){
   render();
 }
 window.addEventListener('popstate',()=>{ /* 단순 라우터: 홈으로 */ });
+
+/* ---------- PWA: 서비스워커 + 설치 프롬프트 ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); window._deferredPrompt=e;
+  const b=document.getElementById('installBtn'); if(b) b.style.display='flex'; });
+window.addEventListener('appinstalled',()=>{ window._deferredPrompt=null; toast('앱이 설치되었어요 🌱'); });
+async function promptInstall(){
+  const e=window._deferredPrompt;
+  if(!e){ toast('브라우저 메뉴의 "홈 화면에 추가"를 이용해주세요'); return; }
+  e.prompt(); await e.userChoice; window._deferredPrompt=null;
+  const b=document.getElementById('installBtn'); if(b) b.style.display='none';
+}
+
 boot();
 </script>
 </body>

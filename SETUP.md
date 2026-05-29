@@ -9,14 +9,27 @@
 
 ```
 jjondeugi/
-├─ index.html              ← 콩나물 프론트엔드 앱 (GitHub Pages 홈페이지)
+├─ index.html              ← 콩나물 프론트엔드 앱 (GitHub Pages 홈페이지, PWA)
+├─ manifest.webmanifest    ← PWA 매니페스트 (설치형 앱)
+├─ sw.js                   ← 서비스워커 (오프라인 캐시)
+├─ icons/                  ← 앱 아이콘 (192/512 PNG)
 ├─ CNAME                   ← jjondeugi.com 도메인 연결
+├─ CLAUDE.md               ← 작업 메모리 (Drive-first 원칙 + 프로젝트 컨텍스트)
 ├─ SETUP.md                ← (이 문서)
 ├─ backend/
 │  ├─ Code.gs              ← Google Apps Script 백엔드 (구글 시트=DB, 토스 결제, 정산, 텔레그램)
 │  └─ appsscript.json      ← Apps Script 매니페스트(웹앱 배포 설정)
 └─ SELLZY_complete.html    ← (구버전 데모, 참고용 보관)
 ```
+
+### 📱 화면 구성 (완성)
+홈(펀딩 피드+분양 배너) · 검색 · 라이브 · 주문내역 · **주문상세/배송추적** · 마이페이지 ·
+상품상세(**수익 분배표 90/7/3**) · 장바구니 · 체크아웃/결제 · 로그인/회원가입(소셜) ·
+**내 쇼핑몰·수익 대시보드**(GMV/수익/출금) · **AI 마케팅**(4채널 발행 일정) · 언어(한/영)·통화(₩/$)
+
+### 📲 PWA (설치형 앱)
+- jjondeugi.com 접속 시 브라우저가 **"홈 화면에 추가"** 를 제안 → 네이티브 앱처럼 실행
+- 마이페이지 하단 **앱 설치** 버튼으로도 설치 가능 (오프라인 기본 캐시 지원)
 
 ## 🌐 주요 경로(URL)
 
