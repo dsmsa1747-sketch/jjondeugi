@@ -1,6 +1,9 @@
 "use client";
 // 정밀분석 결과화면 — 작업 상태를 폴링하고, 완료되면 추적영상 + 지표를 표시.
+// analysis_mode === "match" 이면 TeamComparison(팀 비교)도 렌더.
+// analysis_mode === "practice" 이면 팀 점유율 대신 개인 분석 안내 표시.
 import { useEffect, useState } from "react";
+import TeamComparison from "@/components/TeamComparison";
 
 export default function PrecisionResult({ jobId }) {
   const [data, setData] = useState(null);
@@ -47,6 +50,8 @@ export default function PrecisionResult({ jobId }) {
   const players = result.players || [];
   const target = result.target_player;
   const poss = result.possession || {};
+  const analysisMode = result.analysis_mode || "match"; // "match" | "practice"
+  const isMatchMode = analysisMode === "match";
 
   return (
     <div>
@@ -56,7 +61,22 @@ export default function PrecisionResult({ jobId }) {
         <video src={data.videoUrl} controls style={{ width: "100%", maxWidth: 720 }} />
       )}
 
-      <p>⚽ 볼 점유율 — A팀 {poss.team1 ?? "-"}% / B팀 {poss.team2 ?? "-"}%</p>
+      {/* 공식경기: 팀 비교 컴포넌트 표시 */}
+      {isMatchMode && result.teams && (
+        <TeamComparison teams={result.teams} />
+      )}
+
+      {/* 연습경기: 팀 구분 불가 안내 */}
+      {!isMatchMode && (
+        <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0" }}>
+          🏃 연습경기 모드: 팀 구분 없이 개인 분석
+        </p>
+      )}
+
+      {/* 볼 점유율은 공식경기(팀 비교 없는 경우 포함)에만 표시 */}
+      {isMatchMode && !result.teams && (
+        <p>⚽ 볼 점유율 — A팀 {poss.team1 ?? "-"}% / B팀 {poss.team2 ?? "-"}%</p>
+      )}
 
       {target && (
         <div style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8, margin: "12px 0" }}>

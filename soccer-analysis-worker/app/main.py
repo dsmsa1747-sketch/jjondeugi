@@ -46,6 +46,12 @@ class AnalyzeRequest(BaseModel):
     video: str                       # gs://... 또는 youtube 링크
     # 결과 저장 경로(미지정 시 job_id 기준 자동)
     output_prefix: str | None = None
+    # 분석 모드
+    #   "match"    (기본) 두 팀 경기 — KMeans 팀 분류 + 점유율 + 팀비교 포함
+    #   "practice" 연습경기(같은 조끼, 등번호 없어도 됨) — 팀 분류 생략, 개인 지표만 산출
+    #              시스템이 등번호를 읽지 않아도 되는 이유: 클릭 선수지정으로 특정 선수를 잠그고
+    #              이름/번호는 target_meta 로 직접 입력합니다.
+    analysis_mode: str = "match"
     # 원근변환 보정점(화면 4점). 없으면 거리/속도는 상대 추정값(px).
     source_points: list[list[float]] | None = None
     # 클릭 선수지정: 화면 좌표(영상 원본 픽셀) + 클릭 시점(초) + 메타(이름/번호/유니폼)
@@ -95,6 +101,7 @@ def _run_job(req: AnalyzeRequest):
             target_meta=req.target_meta,
             target_time_sec=req.target_time,
             progress_cb=lambda p: job_status.mark_processing(job_id, progress=p),
+            analysis_mode=req.analysis_mode,
         )
 
         prefix = req.output_prefix or f"results/{job_id}"
@@ -106,6 +113,7 @@ def _run_job(req: AnalyzeRequest):
             "players_count": len(result["players"]),
             "calibrated": result["calibrated"],
             "duration_sec": result.get("duration_sec"),
+            "analysis_mode": result.get("analysis_mode", "match"),
         }
         job_status.mark_done(job_id, video_uri, json_uri, summary=summary)
         notify.report_done(job_id, summary)  # 회장님 자동보고

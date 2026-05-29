@@ -22,7 +22,11 @@ export async function POST(req) {
       targetPoint, // (선택) 클릭 선수지정 화면좌표 [x,y] (영상 원본 픽셀)
       targetTime, // (선택) 클릭한 시점(초)
       targetMeta, // (선택) { name, number, jersey }
+      analysisMode, // (선택) "match" | "practice" — 기본값 "match"
     } = body;
+
+    // 분석모드: 공식경기(팀 구분) vs 연습경기(같은 조끼, 개인 추적만)
+    const resolvedMode = analysisMode === "practice" ? "practice" : "match";
 
     const video = gsUri || youtubeUrl;
     if (!video) {
@@ -40,6 +44,7 @@ export async function POST(req) {
       video,
       userEmail: session?.user?.email || null,
       targetMeta: targetMeta || null,
+      analysisMode: resolvedMode, // "match" | "practice"
     });
 
     // 2) Cloud Tasks로 워커에 분석 작업 전달
@@ -50,6 +55,7 @@ export async function POST(req) {
       target_point: targetPoint || null,
       target_time: targetTime ?? null,
       target_meta: targetMeta || null,
+      analysis_mode: resolvedMode, // 백엔드 계약: snake_case
     });
 
     return NextResponse.json({ jobId, status: "queued" });

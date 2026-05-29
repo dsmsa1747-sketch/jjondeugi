@@ -3,6 +3,7 @@
 //  - 영상을 재생/일시정지하고, 분석할 선수를 클릭해 지정
 //  - 클릭 좌표(영상 원본 픽셀) + 클릭 시점(초) + 이름/등번호/유니폼색을 함께 전송
 //  - 등번호 자동인식은 약하므로, 클릭+직접입력으로 정확도를 보완
+//  - 연습경기 모드: 같은 조끼라 팀 구분 불가 → 클릭+이름/번호로 대상 선수 지정 후 개인 추적
 //
 // ⚠️ 클릭 지정은 '업로드한 mp4'(GCS 재생 URL)에서 동작합니다.
 //    유튜브 임베드는 iframe이라 픽셀 단위 클릭이 불가 → 이 경우 클릭 없이 분석하세요.
@@ -14,6 +15,8 @@ export default function PlayerSelector({ videoUrl, gsUri, onSubmitted }) {
   const [meta, setMeta] = useState({ name: "", number: "", jersey: "" });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  // 연습경기 모드: true이면 analysisMode="practice", false이면 "match"
+  const [practiceMode, setPracticeMode] = useState(false);
 
   // 영상 클릭 → 표시좌표를 영상 '원본 픽셀'로 환산 + 현재 재생시점 기록
   const handleClick = (e) => {
@@ -55,6 +58,7 @@ export default function PlayerSelector({ videoUrl, gsUri, onSubmitted }) {
             number: meta.number || null,
             jersey: meta.jersey || null,
           },
+          analysisMode: practiceMode ? "practice" : "match", // 연습/공식 경기 구분
         }),
       });
       const j = await res.json();
@@ -69,6 +73,22 @@ export default function PlayerSelector({ videoUrl, gsUri, onSubmitted }) {
 
   return (
     <div>
+      {/* 연습경기 모드 토글 */}
+      <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={practiceMode}
+          onChange={(e) => setPracticeMode(e.target.checked)}
+          style={{ width: 16, height: 16 }}
+        />
+        <span style={{ fontWeight: "bold" }}>연습경기 모드 (번호 없음 · 같은 조끼)</span>
+      </label>
+      {practiceMode && (
+        <p style={{ color: "#666", fontSize: 13, marginTop: -4, marginBottom: 8, lineHeight: 1.5 }}>
+          💡 연습경기는 같은 조끼라 팀 구분이 안 되니, 클릭으로 선수를 지정하고 이름/번호를 직접 입력하면 그 선수를 따라가며 분석합니다.
+        </p>
+      )}
+
       <p style={{ color: "#555" }}>
         ▶ 영상을 재생하다가 <b>분석할 선수가 잘 보이는 순간 일시정지 → 그 선수를 클릭</b>하세요.
       </p>

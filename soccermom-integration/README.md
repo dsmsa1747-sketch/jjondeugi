@@ -21,6 +21,8 @@ soccermom-integration/components/PrecisionResult.jsx
                                                →  soccermom/components/PrecisionResult.jsx
 soccermom-integration/components/PlayerSelector.jsx
                                                →  soccermom/components/PlayerSelector.jsx
+soccermom-integration/components/TeamComparison.jsx
+                                               →  soccermom/components/TeamComparison.jsx
 ```
 
 ### 클릭 선수지정 사용
@@ -35,6 +37,23 @@ return jobId
 - 클릭 좌표는 영상 원본 픽셀로 자동 환산되고, 클릭 시점(초)도 함께 전송됩니다.
 - ⚠️ 클릭 지정은 **업로드 mp4** 에서만 동작(유튜브 임베드는 iframe이라 픽셀 클릭 불가).
   유튜브 링크는 클릭 없이 분석하세요.
+
+### 연습경기 모드 토글 (PlayerSelector)
+`PlayerSelector` 상단에 **"연습경기 모드 (번호 없음 · 같은 조끼)"** 체크박스가 있습니다.
+- **OFF (기본)**: `analysisMode = "match"` — 팀 구분 + 점유율 분석.
+- **ON**: `analysisMode = "practice"` — 같은 조끼라 팀 구분이 안 되니, 클릭으로 선수를 지정하고 이름/번호를 직접 입력하면 그 선수를 따라가며 개인 분석만 수행합니다.
+토글 상태는 POST 바디의 `analysisMode` 필드로 API에 전달됩니다.
+
+### `analysisMode` 요청 필드
+`POST /api/analyze-precise` 바디에 `analysisMode: "match" | "practice"` 를 포함할 수 있습니다 (기본값 `"match"`).
+- 워커에는 `analysis_mode` (snake_case) 로 전달됩니다.
+- Firestore 작업 문서에도 `analysisMode` 가 함께 저장됩니다.
+
+### TeamComparison 컴포넌트 (매치 모드)
+`result.teams` 가 존재하고 `result.analysis_mode === "match"` 이면 `PrecisionResult` 가 자동으로 `<TeamComparison teams={result.teams} />` 를 렌더합니다.
+- A팀(파랑) vs B팀(빨강) 선수 수 · 총 이동거리 · 평균속도 · 최고속도 · 점유율을 가로 막대 비교로 표시.
+- `unit_distance` / `unit_speed` 에 "상대" 또는 "px" 가 포함되면 **추정값** 라벨을 자동 표기.
+- 연습경기 모드에서는 TeamComparison 대신 "연습경기 모드: 팀 구분 없이 개인 분석" 안내문을 표시합니다.
 
 ## 2) npm 패키지 설치
 ```bash
@@ -95,6 +114,8 @@ const res = await fetch("/api/analyze-precise", {
     // 클릭 선수지정(선택):
     targetPoint: [640, 380],
     targetMeta: { name: "홍길동", number: "28", jersey: "파랑" },
+    // 분석모드(선택): "match"(기본) | "practice"(연습경기)
+    analysisMode: "match",
   }),
 });
 const { jobId } = await res.json();
