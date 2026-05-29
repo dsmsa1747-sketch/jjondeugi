@@ -1,0 +1,55 @@
+# ── 워커: 빌드+푸시+Cloud Run(GPU) 배포를 전부 Google 서버에서 ──
+# 로컬 터미널과 무관하게 끝까지 실행됩니다(끊겨도 OK).
+# 기본 10분 제한을 1시간으로 늘리고, 빠른 빌드 머신을 사용합니다.
+timeout: 3600s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: us-central1
+  _BUCKET: ''          # 비우면 ${PROJECT_ID}-soccermom 사용
+
+steps:
+  # 0) Artifact Registry 저장소 준비(없으면 생성)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts repositories create cloud-run-source-deploy \
+          --repository-format=docker --location=$_REGION 2>/dev/null || true
+
+  # 1) 이미지 빌드
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-yolo-worker'
+      - .
+
+  # 2) 푸시
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-yolo-worker'
+
+  # 3) Cloud Run(GPU) 배포
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        BUCKET="${_BUCKET:-${PROJECT_ID}-soccermom}"
+        gcloud storage buckets create "gs://$BUCKET" --location=$_REGION 2>/dev/null || true
+        gcloud run deploy soccermom-yolo-worker \
+          --image=$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-yolo-worker \
+          --region=$_REGION \
+          --gpu=1 --gpu-type=nvidia-l4 \
+          --cpu=4 --memory=16Gi --no-cpu-throttling \
+          --min-instances=0 --max-instances=3 --concurrency=1 --timeout=1800 \
+          --no-allow-unauthenticated \
+          --set-env-vars="GCP_PROJECT=$PROJECT_ID,GCS_BUCKET=$BUCKET,FIRESTORE_COLLECTION=analysisJobs,NOTIFY_PROVIDER=none"
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-yolo-worker'

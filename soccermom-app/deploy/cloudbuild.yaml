@@ -1,0 +1,47 @@
+# ── 앱: 빌드+푸시+Cloud Run 배포를 전부 Google 서버에서 ──
+# 로컬 터미널과 무관하게 끝까지 실행됩니다(끊겨도 OK).
+timeout: 1800s
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: asia-northeast3      # 서울
+  _WORKER_URL: ''               # 워커 배포 후 URL(있으면 전달)
+
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts repositories create cloud-run-source-deploy \
+          --repository-format=docker --location=$_REGION 2>/dev/null || true
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app'
+      - .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run deploy soccermom-app \
+          --image=$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app \
+          --region=$_REGION \
+          --allow-unauthenticated \
+          --cpu=1 --memory=512Mi \
+          --min-instances=0 --max-instances=5 \
+          --set-env-vars="GCP_PROJECT=$PROJECT_ID,WORKER_URL=$_WORKER_URL"
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app'
