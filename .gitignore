@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.Python
+*.so
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Secrets / credentials
+.env
+.env.*
+credentials.json
+token.json
+drive_token.json
+service_account.json
+*.pem
+*.key
+
+# Diagnostic output
+diag_out/
+
+# Data / logs
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

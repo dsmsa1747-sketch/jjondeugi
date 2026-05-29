@@ -1,0 +1,51 @@
+{
+  "name": "메이크샵 자동등록 (pc1)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "수동 실행",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 200]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "매일 오전 10시",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "command": "cd /home/pc1/jjondeugi && python3 makeshop_sheets_pipeline.py"
+      },
+      "id": "execute-pipeline",
+      "name": "메이크샵 자동등록 실행",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [560, 300],
+      "notes": "★★★ 'cd' 뒤 경로를 pc1에서 makeshop_sheets_pipeline.py 가 들어있는 실제 폴더 경로로 바꿔주세요. (윈도우면: cd C:\\경로 && python makeshop_sheets_pipeline.py)"
+    }
+  ],
+  "connections": {
+    "수동 실행": {
+      "main": [[{ "node": "메이크샵 자동등록 실행", "type": "main", "index": 0 }]]
+    },
+    "매일 오전 10시": {
+      "main": [[{ "node": "메이크샵 자동등록 실행", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}
