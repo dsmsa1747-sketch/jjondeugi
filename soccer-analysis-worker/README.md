@@ -97,7 +97,7 @@ gcloud storage cp best.pt gs://<버킷>/models/best.pt
    (클릭 선수지정 시 `"target_point":[x,y], "target_meta":{"name":"홍길동","number":"28"}` 추가)
 3. 워커가 처리하며 Firestore 상태 갱신: `processing`(progress) → `done`
 4. 완료 시 문서에 `resultVideoUri`, `resultJsonUri`(GCS 경로), `summary` 기록
-5. SoccerMom이 Firestore를 보고 결과화면(그래프+추적영상) 렌더 → Telegram 완료 알림
+5. SoccerMom이 Firestore를 보고 결과화면(그래프+추적영상) 렌더 → **Firebase Cloud Messaging**(FCM) 완료 알림
 
 > 이 연결 코드(웹 버튼/큐 등록/결과화면)는 SoccerMom 코드가 있어야 작성 가능합니다.
 > SoccerMom 프로젝트를 작업공간에 올려주시면 바로 이어서 만들겠습니다.
