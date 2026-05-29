@@ -1,0 +1,97 @@
+name: Makeshop 자동등록
+
+# 실행 방법:
+#  1) 수동: GitHub 저장소 > Actions 탭 > "Makeshop 자동등록" > Run workflow 버튼
+#  2) 자동: 아래 schedule 의 cron 시각마다 (KST 기준 매일 오전 10시)
+#
+# 필요한 Secrets (저장소 Settings > Secrets and variables > Actions 에 등록):
+#   MAKESHOP_ADMIN_ID         - 메이크샵 운영자 아이디
+#   MAKESHOP_ADMIN_PASSWORD   - 메이크샵 운영자 비밀번호
+#   TELEGRAM_BOT_TOKEN        - 텔레그램 봇 토큰
+#   TELEGRAM_CHAT_ID          - 텔레그램 채팅 ID
+#   GOOGLE_CREDENTIALS_JSON   - 구글 서비스계정 JSON 전체 내용 (시트를 이 계정과 공유)
+#                               또는 OAuth 토큰(drive_token.json) 내용
+#   MAKESHOP_ADMIN_URL        - (선택) 기본 https://premium.makeshop.co.kr
+
+on:
+  workflow_dispatch:        # 수동 실행 버튼
+  schedule:
+    - cron: "0 1 * * *"     # 매일 UTC 01:00 = KST 오전 10:00
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright python-dotenv google-auth google-auth-oauthlib google-api-python-client requests
+          playwright install --with-deps chromium
+
+      - name: 메이크샵 접속 가능 여부 진단
+        continue-on-error: true
+        run: |
+          echo "=== 메이크샵 접속 테스트 ==="
+          curl -s -o /dev/null -w "premium.makeshop.co.kr -> HTTP %{http_code} (%{time_total}s)\n" --max-time 20 https://premium.makeshop.co.kr/ || echo "접속 불가"
+          echo "=== 텔레그램 접속 테스트 ==="
+          curl -s -o /dev/null -w "api.telegram.org -> HTTP %{http_code}\n" --max-time 20 https://api.telegram.org/ || echo "접속 불가"
+
+      - name: 구글 인증 파일 생성
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "$GOOGLE_CREDENTIALS_JSON" ]; then
+            echo "::error::GOOGLE_CREDENTIALS_JSON secret 이 비어있습니다."
+            exit 1
+          fi
+          # 서비스계정이면 credentials.json, OAuth 토큰이면 drive_token.json 으로 저장
+          printf '%s' "$GOOGLE_CREDENTIALS_JSON" > google_creds.json
+          if grep -q '"type"[[:space:]]*:[[:space:]]*"service_account"' google_creds.json; then
+            cp google_creds.json credentials.json
+            echo "서비스계정 인증으로 설정됨 (credentials.json)"
+          else
+            cp google_creds.json drive_token.json
+            echo "OAuth 토큰 인증으로 설정됨 (drive_token.json)"
+          fi
+          rm -f google_creds.json
+
+      - name: .env 생성
+        env:
+          MAKESHOP_ADMIN_ID: ${{ secrets.MAKESHOP_ADMIN_ID }}
+          MAKESHOP_ADMIN_PASSWORD: ${{ secrets.MAKESHOP_ADMIN_PASSWORD }}
+          MAKESHOP_ADMIN_URL: ${{ secrets.MAKESHOP_ADMIN_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          {
+            echo "MAKESHOP_ADMIN_ID=${MAKESHOP_ADMIN_ID}"
+            echo "MAKESHOP_ADMIN_PASSWORD=${MAKESHOP_ADMIN_PASSWORD}"
+            echo "MAKESHOP_ADMIN_URL=${MAKESHOP_ADMIN_URL:-https://premium.makeshop.co.kr}"
+            echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}"
+            echo "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}"
+            echo "DRIVE_TOKEN_FILE=drive_token.json"
+            echo "DRIVE_CREDENTIALS_FILE=credentials.json"
+          } > .env
+          echo ".env 생성 완료 (값은 마스킹됨)"
+
+      - name: 자동등록 파이프라인 실행
+        run: python makeshop_sheets_pipeline.py
+
+      - name: 스크린샷 결과 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: makeshop-screenshots
+          path: diag_out/
+          if-no-files-found: ignore
+          retention-days: 7
