@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#16A34A" />
+<title>콩나물 — 신선함을 잇다</title>
+<meta name="description" content="콩나물 — 신선 농산물·식품 커머스. 회원가입·결제·주문까지 한 곳에서." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<!-- 토스페이먼츠 결제 SDK (실 키 설정 시에만 사용) -->
+<script src="https://js.tosspayments.com/v1/payment"></script>
+<style>
+:root{
+  --primary:#16A34A; --primary-dark:#15803D; --primary-light:#DCFCE7; --primary-bg:#F0FDF4;
+  --cta:#1B64DA; --cta-dark:#1957C2;
+  --bg:#FFFFFF; --bg2:#F8FAFB; --bg3:#F1F4F6;
+  --text:#191F28; --text2:#4E5968; --text3:#8B95A1; --text4:#B0B8C1;
+  --border:#E5E8EB; --border2:#D1D6DB;
+  --red:#F04452; --orange:#FF8A00; --yellow:#FFC233;
+  --radius:12px; --radius-lg:16px; --radius-xl:20px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 4px 16px rgba(0,0,0,0.08);
+  --maxw:480px; --tabh:60px; --headerh:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg3);color:var(--text);line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:0;height:0}
+
+/* ---- Layout ---- */
+#app{max-width:var(--maxw);margin:0 auto;background:var(--bg);min-height:100vh;position:relative;box-shadow:0 0 40px rgba(0,0,0,.05);overflow-x:hidden}
+.header{height:var(--headerh);display:flex;align-items:center;gap:8px;padding:0 16px;position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);z-index:60;border-bottom:1px solid var(--border)}
+.header .logo{font-size:20px;font-weight:800;color:var(--primary);letter-spacing:-.02em;display:flex;align-items:center;gap:4px}
+.header .spacer{flex:1}
+.header .hicon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--text2);position:relative;font-size:20px}
+.header .hicon:active{background:var(--bg3)}
+.header .back{font-size:24px;color:var(--text);width:32px;height:40px;display:flex;align-items:center}
+.header .title{font-size:17px;font-weight:700}
+.badge-count{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;border-radius:8px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.view{padding-bottom:calc(var(--tabh) + env(safe-area-inset-bottom) + 16px);min-height:calc(100vh - var(--headerh));animation:fade .25s ease}
+.view.nofooter{padding-bottom:24px}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- Tab bar ---- */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:var(--maxw);height:calc(var(--tabh) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;z-index:60}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text4);font-size:11px;font-weight:600;transition:color .15s}
+.tab .ic{font-size:22px;line-height:1}
+.tab.active{color:var(--primary)}
+
+/* ---- Buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:52px;padding:0 20px;border-radius:var(--radius);font-size:16px;font-weight:700;transition:transform .1s,background .15s,opacity .15s;width:100%}
+.btn:active{transform:scale(.985)}
+.btn.cta{background:var(--cta);color:#fff}.btn.cta:active{background:var(--cta-dark)}
+.btn.primary{background:var(--primary);color:#fff}.btn.primary:active{background:var(--primary-dark)}
+.btn.sub{background:var(--bg3);color:var(--text)}
+.btn.line{background:#fff;border:1.5px solid var(--border2);color:var(--text)}
+.btn.sm{height:40px;font-size:14px;padding:0 14px;border-radius:10px;width:auto}
+.btn.kakao{background:#FEE500;color:#191600}
+.btn.naver{background:#03C75A;color:#fff}
+.btn:disabled{opacity:.5;pointer-events:none}
+
+/* ---- Forms ---- */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:7px}
+.input{width:100%;height:52px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:0 16px;font-size:16px;transition:border .15s,background .15s}
+.input:focus{outline:none;border-color:var(--primary);background:#fff}
+textarea.input{height:auto;padding:14px 16px;resize:vertical;min-height:90px}
+.input::placeholder{color:var(--text4)}
+
+/* ---- Cards & misc ---- */
+.sec{padding:16px}
+.sec-title{font-size:18px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.sec-sub{font-size:13px;color:var(--text3);margin-bottom:14px}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 12px;border-radius:16px;font-size:13px;font-weight:600;background:var(--bg3);color:var(--text2);white-space:nowrap}
+.chip.on{background:var(--primary);color:#fff}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700}
+.pill.g{background:var(--primary-light);color:var(--primary-dark)}
+.pill.o{background:#FFF1E0;color:var(--orange)}
+.pill.r{background:#FFE9EB;color:var(--red)}
+.pill.b{background:#E5EFFF;color:var(--cta)}
+.divider{height:8px;background:var(--bg3)}
+.hr{height:1px;background:var(--border);margin:0}
+
+/* ---- Product grid ---- */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}
+.pcard{cursor:pointer}
+.pcard .thumb{aspect-ratio:1;border-radius:var(--radius-lg);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;position:relative;border:1px solid var(--border)}
+.pcard .thumb .liked{position:absolute;top:8px;right:8px;font-size:20px}
+.pcard .pname{font-size:14px;font-weight:600;margin-top:8px;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px}
+.pcard .pprice{font-size:16px;font-weight:800;margin-top:2px}
+.pcard .pmeta{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ---- Banner / hero ---- */
+.hero{margin:16px;border-radius:var(--radius-xl);padding:26px 22px;background:linear-gradient(135deg,#16A34A 0%,#22C55E 100%);color:#fff;position:relative;overflow:hidden}
+.hero h2{font-size:23px;font-weight:800;letter-spacing:-.03em;line-height:1.3}
+.hero p{font-size:14px;opacity:.92;margin-top:8px}
+.hero .emoji{position:absolute;right:-6px;bottom:-12px;font-size:96px;opacity:.25}
+
+/* ---- List rows ---- */
+.row{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .rthumb{width:64px;height:64px;border-radius:12px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;border:1px solid var(--border)}
+.row .rbody{flex:1;min-width:0}
+.row .rtitle{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .rsub{font-size:12px;color:var(--text3);margin-top:3px}
+.row .rright{text-align:right;flex-shrink:0}
+.menu-row{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);font-size:15px;font-weight:500}
+.menu-row .mic{font-size:20px}
+.menu-row .arrow{margin-left:auto;color:var(--text4)}
+
+/* ---- Quantity stepper ---- */
+.qty{display:inline-flex;align-items:center;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
+.qty button{width:36px;height:36px;font-size:18px;color:var(--text2);background:#fff}
+.qty button:active{background:var(--bg3)}
+.qty span{width:40px;text-align:center;font-weight:700;font-size:15px}
+
+/* ---- Bottom fixed bar (detail/checkout) ---- */
+.fixedbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:var(--maxw);background:#fff;border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:55}
+
+/* ---- Empty & loading ---- */
+.empty{text-align:center;padding:64px 24px;color:var(--text3)}
+.empty .ee{font-size:56px;margin-bottom:14px}
+.empty .et{font-size:16px;font-weight:600;color:var(--text2)}
+.empty .es{font-size:13px;margin-top:6px}
+.skel{background:linear-gradient(90deg,#eef1f3 25%,#f6f8f9 50%,#eef1f3 75%);background-size:200% 100%;animation:sk 1.2s infinite;border-radius:8px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ---- Toast ---- */
+#toast{position:fixed;bottom:calc(var(--tabh) + 24px);left:50%;transform:translateX(-50%) translateY(20px);background:#191F28;color:#fff;padding:13px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:200;opacity:0;pointer-events:none;transition:.25s;max-width:90%;box-shadow:var(--shadow-lg)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- Modal sheet ---- */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;opacity:0;pointer-events:none;transition:.2s;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg.show{opacity:1;pointer-events:auto}
+.sheet{width:100%;max-width:var(--maxw);background:#fff;border-radius:20px 20px 0 0;padding:8px 0 calc(16px + env(safe-area-inset-bottom));transform:translateY(100%);transition:.25s cubic-bezier(.2,.8,.2,1);max-height:88vh;overflow-y:auto}
+.sheet-bg.show .sheet{transform:translateY(0)}
+.sheet .grab{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:8px auto 12px}
+.sheet h3{font-size:18px;font-weight:800;padding:0 20px 12px}
+
+/* ---- Stat tiles ---- */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.stat .sl{font-size:12px;color:var(--text3)}
+.stat .sv{font-size:20px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+.stat .sv.g{color:var(--primary)}
+
+.notice{background:var(--primary-bg);border:1px solid var(--primary-light);color:var(--primary-dark);font-size:12.5px;padding:10px 14px;border-radius:10px;margin:0 16px 14px;line-height:1.5}
+.tabs-line{display:flex;border-bottom:1px solid var(--border);position:sticky;top:var(--headerh);background:#fff;z-index:50}
+.tabs-line .t{flex:1;text-align:center;padding:14px 0;font-size:14px;font-weight:600;color:var(--text3);border-bottom:2px solid transparent}
+.tabs-line .t.on{color:var(--text);border-bottom-color:var(--text)}
+.scroll-x{display:flex;gap:8px;overflow-x:auto;padding:12px 16px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<div class="sheet-bg" id="sheetbg"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ============================================================
+   콩나물 — 신선 커머스 SPA
+   - 백엔드(Google Apps Script) URL 미설정 시 데모 모드(localStorage)로 동작
+   - CONFIG.API_BASE 에 Apps Script 웹앱 URL 입력 시 실서비스로 전환
+   ============================================================ */
+
+const CONFIG = {
+  // 🔧 Google Apps Script 웹앱 배포 URL을 여기에 붙여넣으면 실서비스로 전환됩니다.
+  //    예: 'https://script.google.com/macros/s/AKfycb..../exec'
+  //    비워두면 브라우저 localStorage 기반 데모 모드로 동작합니다.
+  API_BASE: '',
+
+  // 🔧 토스페이먼츠 클라이언트 키 (test_ck_... 또는 live_ck_...).
+  //    값이 'test_ck_'/'live_ck_'로 시작하지 않으면 결제는 시뮬레이션으로 처리됩니다.
+  TOSS_CLIENT_KEY: '',
+
+  BRAND: '콩나물',
+  FEE_RATE: 0.03,          // 플랫폼 수수료 3%
+  FREE_SHIP_OVER: 30000,   // 3만원 이상 무료배송
+  SHIP_FEE: 3000,
+};
+
+/* ---------- 유틸 ---------- */
+const $ = (s,el=document)=>el.querySelector(s);
+const won = n => '₩' + Number(n||0).toLocaleString('ko-KR');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls = {
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem('kn_'+k))??d}catch{return d}},
+  set:(k,v)=>localStorage.setItem('kn_'+k,JSON.stringify(v)),
+};
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+function openSheet(html){$('#sheet').innerHTML='<div class="grab"></div>'+html;$('#sheetbg').classList.add('show')}
+function closeSheet(){$('#sheetbg').classList.remove('show')}
+$('#sheetbg').addEventListener('click',e=>{if(e.target.id==='sheetbg')closeSheet()});
+
+/* ---------- 샘플 데이터 (데모/초기 시드) ---------- */
+const SEED_PRODUCTS = [
+  {id:'p1',name:'국산 무농약 콩나물 300g',price:2200,cat:'채소',emoji:'🌱',seller:'새벽농장',stock:120,sales:842,desc:'아삭한 식감의 국산 무농약 콩나물. 당일 수확 후 바로 배송합니다.'},
+  {id:'p2',name:'유기농 시금치 한 단',price:3500,cat:'채소',emoji:'🥬',seller:'들녘농원',stock:64,sales:311,desc:'유기농 인증 시금치. 무침·국 어디에나 좋아요.'},
+  {id:'p3',name:'알이 꽉 찬 방울토마토 1kg',price:8900,cat:'과일',emoji:'🍅',seller:'햇살팜',stock:38,sales:520,desc:'당도 9brix 이상의 프리미엄 방울토마토.'},
+  {id:'p4',name:'갓 볶은 원두 200g (홀빈)',price:12000,cat:'가공식품',emoji:'☕',seller:'로스터리K',stock:90,sales:177,desc:'주문 즉시 로스팅하는 스페셜티 원두.'},
+  {id:'p5',name:'제주 감귤 3kg',price:15900,cat:'과일',emoji:'🍊',seller:'제주직송',stock:25,sales:998,desc:'새콤달콤 제주 노지 감귤. 산지 직송.'},
+  {id:'p6',name:'유정란 특란 15구',price:7200,cat:'축산',emoji:'🥚',seller:'행복한닭',stock:140,sales:430,desc:'동물복지 인증 농장의 신선한 유정란.'},
+  {id:'p7',name:'국산 햇감자 2kg',price:6900,cat:'채소',emoji:'🥔',seller:'강원감자',stock:77,sales:265,desc:'포슬포슬한 강원도 햇감자.'},
+  {id:'p8',name:'손질 새송이버섯 500g',price:4500,cat:'채소',emoji:'🍄',seller:'버섯마을',stock:52,sales:188,desc:'바로 요리하는 손질 새송이버섯.'},
+];
+const SEED_LIVE = [
+  {id:'l1',title:'제주 감귤 산지 라이브 특가',host:'제주직송',status:'live',viewers:1284,emoji:'🍊'},
+  {id:'l2',title:'새벽농장 콩나물 키우기 비하인드',host:'새벽농장',status:'soon',startAt:'오늘 20:00',emoji:'🌱'},
+  {id:'l3',title:'로스터리K 원두 블라인드 테스트',host:'로스터리K',status:'soon',startAt:'내일 19:30',emoji:'☕'},
+];
+const CATS = ['전체','채소','과일','축산','가공식품'];
+
+/* ============================================================
+   API 레이어 — 백엔드 있으면 GAS 호출, 없으면 데모(localStorage)
+   ============================================================ */
+const hasBackend = () => /^https:\/\/script\.google\.com/.test(CONFIG.API_BASE);
+
+async function api(action, payload={}){
+  if(hasBackend()){
+    const res = await fetch(CONFIG.API_BASE, {
+      method:'POST',
+      // GAS 웹앱 CORS preflight 회피를 위해 text/plain 사용
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action, token: state.token, payload}),
+    });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error||'요청 실패');
+    return data.result;
+  }
+  return demoApi(action, payload);
+}
+
+/* ---------- 데모 백엔드 ---------- */
+async function demoApi(action, p){
+  await new Promise(r=>setTimeout(r, 220)); // 네트워크 느낌
+  const users = ls.get('users', []);
+  let products = ls.get('products', null);
+  if(!products){ products = SEED_PRODUCTS.slice(); ls.set('products', products); }
+  let orders = ls.get('orders', []);
+
+  switch(action){
+    case 'listProducts': return products;
+    case 'getProduct': return products.find(x=>x.id===p.id)||null;
+    case 'listLive': return SEED_LIVE;
+
+    case 'signup': {
+      if(users.some(u=>u.email===p.email)) throw new Error('이미 가입된 이메일입니다.');
+      const u={id:uid(),email:p.email,name:p.name,phone:p.phone||'',pw:p.pw,role:'buyer',createdAt:Date.now()};
+      users.push(u); ls.set('users',users);
+      const token='demo.'+u.id; ls.set('session',{token,uid:u.id});
+      return {token, user:safeUser(u)};
+    }
+    case 'login': {
+      const u=users.find(x=>x.email===p.email && x.pw===p.pw);
+      if(!u) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+      const token='demo.'+u.id; ls.set('session',{token,uid:u.id});
+      return {token, user:safeUser(u)};
+    }
+    case 'social': {
+      const email=p.provider+'_user@'+p.provider+'.demo';
+      let u=users.find(x=>x.email===email);
+      if(!u){ u={id:uid(),email,name:p.provider==='kakao'?'카카오회원':'네이버회원',phone:'',pw:'',role:'buyer',createdAt:Date.now()}; users.push(u); ls.set('users',users); }
+      const token='demo.'+u.id; ls.set('session',{token,uid:u.id});
+      return {token, user:safeUser(u)};
+    }
+    case 'me': {
+      const s=ls.get('session',null); if(!s) return null;
+      const u=users.find(x=>x.id===s.uid); return u?safeUser(u):null;
+    }
+    case 'logout': ls.set('session',null); return true;
+
+    case 'listOrders': {
+      const s=ls.get('session',null); if(!s) return [];
+      return orders.filter(o=>o.uid===s.uid).sort((a,b)=>b.createdAt-a.createdAt);
+    }
+    case 'createOrder': {
+      const s=ls.get('session',null); if(!s) throw new Error('로그인이 필요합니다.');
+      const o={id:'ORD-'+uid().toUpperCase(),uid:s.uid,items:p.items,amount:p.amount,
+        ship:p.ship,status:'결제대기',createdAt:Date.now()};
+      orders.push(o); ls.set('orders',orders);
+      return o;
+    }
+    case 'confirmPayment': {
+      orders=ls.get('orders',[]);
+      const o=orders.find(x=>x.id===p.orderId);
+      if(o){ o.status='결제완료'; o.paymentKey=p.paymentKey||'demo_'+uid(); o.paidAt=Date.now(); ls.set('orders',orders); }
+      return o;
+    }
+    default: throw new Error('알 수 없는 요청: '+action);
+  }
+}
+function safeUser(u){return {id:u.id,email:u.email,name:u.name,phone:u.phone,role:u.role}}
+
+/* ============================================================
+   전역 상태 & 라우터
+   ============================================================ */
+const state = {
+  page:'home', user:null, token:null,
+  products:[], cat:'전체', query:'',
+  cart: ls.get('cart',[]),       // [{id,qty}]
+  detailId:null, loading:false,
+};
+
+function setCart(c){ state.cart=c; ls.set('cart',c); }
+function cartCount(){ return state.cart.reduce((s,i)=>s+i.qty,0); }
+function cartItems(){ return state.cart.map(c=>({...productById(c.id),qty:c.qty})).filter(x=>x.id); }
+function cartSubtotal(){ return cartItems().reduce((s,i)=>s+i.price*i.qty,0); }
+function shipFee(sub){ return sub>=CONFIG.FREE_SHIP_OVER||sub===0?0:CONFIG.SHIP_FEE; }
+function productById(id){ return state.products.find(p=>p.id===id); }
+
+function go(page, opts={}){
+  state.page=page;
+  if(opts.detailId!==undefined) state.detailId=opts.detailId;
+  if(opts.cat) state.cat=opts.cat;
+  window.scrollTo(0,0);
+  render();
+}
+
+/* ============================================================
+   렌더링
+   ============================================================ */
+function render(){
+  const app=$('#app');
+  const TABS=['home','search','live','orders','profile'];
+  const showTab = TABS.includes(state.page);
+  app.innerHTML = headerHTML() + `<div class="view ${showTab?'':'nofooter'}" id="view"></div>` + (showTab?tabbarHTML():'');
+  const v=$('#view');
+  const R={ home:HomeView, search:SearchView, live:LiveView, orders:OrdersView, profile:ProfileView,
+            detail:DetailView, cart:CartView, checkout:CheckoutView, login:LoginView, signup:SignupView,
+            paySuccess:PaySuccessView, seller:SellerView };
+  (R[state.page]||HomeView)(v);
+  bindTabs();
+}
+
+function headerHTML(){
+  const titles={search:'검색',live:'라이브',orders:'주문내역',profile:'마이페이지',
+    cart:'장바구니',checkout:'주문/결제',login:'로그인',signup:'회원가입',
+    detail:'',paySuccess:'결제 완료',seller:'판매자 센터'};
+  const backPages=['detail','cart','checkout','login','signup','seller'];
+  if(state.page==='home'){
+    return `<div class="header">
+      <div class="logo">🌱 ${CONFIG.BRAND}</div><div class="spacer"></div>
+      <button class="hicon" onclick="go('search')">🔍</button>
+      <button class="hicon" onclick="go('cart')">🛒${cartBadge()}</button>
+    </div>`;
+  }
+  const back = backPages.includes(state.page)
+    ? `<button class="back" onclick="history.back?back():go('home')">‹</button>`
+    : '';
+  const cart = ['detail'].includes(state.page)
+    ? `<div class="spacer"></div><button class="hicon" onclick="go('cart')">🛒${cartBadge()}</button>` : '';
+  return `<div class="header">${back}<div class="title">${esc(titles[state.page]||'')}</div>${cart}</div>`;
+}
+function cartBadge(){ const n=cartCount(); return n?`<span class="badge-count">${n>99?'99+':n}</span>`:''; }
+function back(){ go('home'); }
+
+function tabbarHTML(){
+  const tabs=[['home','🏠','홈'],['search','🔍','검색'],['live','🎥','라이브'],['orders','📦','주문'],['profile','👤','MY']];
+  return `<div class="tabbar">${tabs.map(([k,ic,l])=>
+    `<button class="tab ${state.page===k?'active':''}" data-tab="${k}"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>`;
+}
+function bindTabs(){ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>go(t.dataset.tab)); }
+
+/* ---------- 홈 ---------- */
+function HomeView(v){
+  v.innerHTML = `
+    <div class="hero">
+      <h2>신선함을 잇다,<br>${CONFIG.BRAND}</h2>
+      <p>산지에서 바로, 오늘 수확한 신선식품</p>
+      <div class="emoji">🌱</div>
+    </div>
+    <div class="scroll-x" id="cats"></div>
+    <div class="sec" style="padding-bottom:4px">
+      <div class="sec-title">지금 인기 상품 🔥</div>
+      <div class="sec-sub">${CONFIG.BRAND} 회원들이 많이 담은 상품</div>
+    </div>
+    <div class="pgrid" id="grid"></div>`;
+  renderCats($('#cats'), c=>{ state.cat=c; renderGrid($('#grid')); paintCats($('#cats')); });
+  renderGrid($('#grid'));
+  loadProducts().then(()=>{ renderGrid($('#grid')); });
+}
+function renderCats(el,onPick){
+  el.innerHTML = CATS.map(c=>`<div class="chip ${state.cat===c?'on':''}" data-c="${c}">${c}</div>`).join('');
+  el.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>onPick(ch.dataset.c));
+}
+function paintCats(el){ el.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.c===state.cat)); }
+function filtered(){
+  let list=state.products;
+  if(state.cat!=='전체') list=list.filter(p=>p.cat===state.cat);
+  if(state.query) list=list.filter(p=>p.name.includes(state.query)||p.seller.includes(state.query));
+  return list;
+}
+function renderGrid(el){
+  if(!state.products.length){ el.innerHTML=Array(4).fill('<div><div class="skel" style="aspect-ratio:1;border-radius:16px"></div><div class="skel" style="height:14px;margin-top:8px"></div><div class="skel" style="height:16px;width:60%;margin-top:6px"></div></div>').join(''); return; }
+  const list=filtered();
+  if(!list.length){ el.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="ee">🔍</div><div class="et">상품이 없어요</div></div>'; return; }
+  el.innerHTML=list.map(pcard).join('');
+  el.querySelectorAll('[data-pid]').forEach(c=>c.onclick=()=>go('detail',{detailId:c.dataset.pid}));
+}
+function pcard(p){
+  return `<div class="pcard" data-pid="${p.id}">
+    <div class="thumb">${p.emoji||'📦'}</div>
+    <div class="pname">${esc(p.name)}</div>
+    <div class="pprice">${won(p.price)}</div>
+    <div class="pmeta">${esc(p.seller)} · 누적 ${p.sales||0}</div>
+  </div>`;
+}
+async function loadProducts(){
+  try{ state.products = await api('listProducts'); }catch(e){ /* keep */ }
+}
+
+/* ---------- 검색 ---------- */
+function SearchView(v){
+  v.innerHTML=`
+    <div class="sec" style="padding-bottom:8px">
+      <input class="input" id="q" placeholder="상품·판매자를 검색하세요" value="${esc(state.query)}" autofocus>
+    </div>
+    <div class="scroll-x" id="cats"></div>
+    <div class="pgrid" id="grid"></div>`;
+  const q=$('#q');
+  q.oninput=()=>{ state.query=q.value.trim(); renderGrid($('#grid')); };
+  renderCats($('#cats'), c=>{ state.cat=c; renderGrid($('#grid')); paintCats($('#cats')); });
+  renderGrid($('#grid'));
+  if(!state.products.length) loadProducts().then(()=>renderGrid($('#grid')));
+}
+
+/* ---------- 라이브 ---------- */
+function LiveView(v){
+  v.innerHTML='<div id="ll"></div>';
+  $('#ll').innerHTML='<div class="empty"><div class="skel" style="height:160px;border-radius:16px;margin:16px"></div></div>';
+  api('listLive').then(list=>{
+    $('#ll').innerHTML = list.map(l=>`
+      <div style="margin:16px;border-radius:16px;overflow:hidden;border:1px solid var(--border)">
+        <div style="aspect-ratio:16/10;background:linear-gradient(135deg,#16A34A22,#1B64DA22);display:flex;align-items:center;justify-content:center;font-size:72px;position:relative">
+          ${l.emoji}
+          ${l.status==='live'
+            ? `<span class="pill r" style="position:absolute;top:12px;left:12px;font-size:12px">🔴 LIVE</span><span class="pill" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);color:#fff">👁 ${l.viewers.toLocaleString()}</span>`
+            : `<span class="pill b" style="position:absolute;top:12px;left:12px;font-size:12px">⏰ ${esc(l.startAt||'예정')}</span>`}
+        </div>
+        <div style="padding:14px">
+          <div style="font-weight:700;font-size:15px">${esc(l.title)}</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px">${esc(l.host)}</div>
+          <button class="btn ${l.status==='live'?'primary':'sub'} sm" style="width:100%;margin-top:12px;height:44px"
+            onclick="toast('${l.status==='live'?'라이브 입장 (데모)':'알림 신청 완료 🔔'}')">
+            ${l.status==='live'?'지금 입장하기':'시작 알림 받기'}</button>
+        </div>
+      </div>`).join('');
+  });
+}
+
+/* ---------- 주문내역 ---------- */
+function OrdersView(v){
+  if(!state.user){ return requireLogin(v,'주문 내역을 보려면 로그인하세요'); }
+  v.innerHTML='<div id="ol"></div>';
+  api('listOrders').then(list=>{
+    if(!list.length){ $('#ol').innerHTML='<div class="empty"><div class="ee">📦</div><div class="et">주문 내역이 없어요</div><div class="es">마음에 드는 상품을 담아보세요</div></div>'; return; }
+    $('#ol').innerHTML=list.map(o=>`
+      <div class="card" style="margin:16px 16px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text3)">${new Date(o.createdAt).toLocaleDateString('ko-KR')} · ${esc(o.id)}</span>
+          <span class="pill ${o.status==='결제완료'?'g':o.status==='배송완료'?'b':'o'}">${esc(o.status)}</span>
+        </div>
+        ${o.items.map(it=>`<div class="row" style="padding:12px 0;border:none">
+          <div class="rthumb">${it.emoji||'📦'}</div>
+          <div class="rbody"><div class="rtitle">${esc(it.name)}</div><div class="rsub">${won(it.price)} · ${it.qty}개</div></div>
+        </div>`).join('')}
+        <div class="hr" style="margin:4px 0 12px"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700"><span>결제금액</span><span>${won(o.amount)}</span></div>
+      </div>`).join('') + '<div style="height:16px"></div>';
+  });
+}
+
+/* ---------- 마이페이지 ---------- */
+function ProfileView(v){
+  if(!state.user){ return requireLogin(v,'로그인하고 더 많은 혜택을 받아보세요'); }
+  const u=state.user;
+  v.innerHTML=`
+    <div class="card" style="margin:16px;display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:28px">🧑‍🌾</div>
+      <div style="flex:1"><div style="font-size:18px;font-weight:800">${esc(u.name)}</div>
+        <div style="font-size:13px;color:var(--text3)">${esc(u.email)}</div></div>
+      <span class="pill g">${u.role==='seller'?'판매자':'일반회원'}</span>
+    </div>
+    <div class="sec" style="padding-top:0">
+      <div class="card" style="padding:0">
+        <div class="menu-row" onclick="go('orders')"><span class="mic">📦</span>주문/배송 내역<span class="arrow">›</span></div>
+        <div class="menu-row" onclick="go('cart')"><span class="mic">🛒</span>장바구니<span class="arrow">›</span></div>
+        <div class="menu-row" onclick="go('seller')"><span class="mic">🏪</span>판매자 센터<span class="arrow">›</span></div>
+        <div class="menu-row" onclick="toast('준비 중입니다')"><span class="mic">⚙️</span>설정<span class="arrow">›</span></div>
+      </div>
+    </div>
+    <div class="sec" style="padding-top:0">
+      <button class="btn line" onclick="doLogout()">로그아웃</button>
+      ${hasBackend()?'':'<div class="notice" style="margin:14px 0 0">⚙️ 현재 <b>데모 모드</b>로 동작 중입니다. 실서비스 연결은 SETUP 가이드를 참고하세요.</div>'}
+    </div>`;
+}
+function requireLogin(v,msg){
+  v.innerHTML=`<div class="empty"><div class="ee">🔐</div><div class="et">로그인이 필요해요</div><div class="es">${esc(msg)}</div>
+    <div style="margin-top:22px"><button class="btn primary" onclick="go('login')">로그인 / 회원가입</button></div></div>`;
+}
+
+/* ---------- 상품 상세 ---------- */
+function DetailView(v){
+  const p=productById(state.detailId);
+  if(!p){ v.innerHTML='<div class="empty"><div class="ee">❓</div><div class="et">상품을 찾을 수 없어요</div></div>'; api('getProduct',{id:state.detailId}).then(pr=>{if(pr){state.products.push(pr);render();}}); return; }
+  v.innerHTML=`
+    <div style="aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:120px;border-bottom:1px solid var(--border)">${p.emoji||'📦'}</div>
+    <div class="sec">
+      <span class="pill g">${esc(p.cat)}</span>
+      <div style="font-size:20px;font-weight:800;margin-top:10px;line-height:1.35">${esc(p.name)}</div>
+      <div style="font-size:24px;font-weight:800;margin-top:8px">${won(p.price)}</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px">${esc(p.seller)} · 누적판매 ${p.sales||0} · 재고 ${p.stock??'-'}</div>
+    </div>
+    <div class="hr"></div>
+    <div class="sec"><div style="font-weight:700;margin-bottom:8px">상품 설명</div>
+      <div style="color:var(--text2);font-size:14px;line-height:1.7">${esc(p.desc||'')}</div></div>
+    <div class="notice">🚚 ${won(CONFIG.FREE_SHIP_OVER)} 이상 구매 시 무료배송 · 오늘 주문 시 내일 도착</div>
+    <div class="fixedbar">
+      <button class="btn line" style="flex:1" onclick="addToCart('${p.id}');">장바구니</button>
+      <button class="btn primary" style="flex:1.4" onclick="buyNow('${p.id}')">바로 구매</button>
+    </div>`;
+}
+function addToCart(id,qty=1,silent=false){
+  const c=state.cart.slice(); const f=c.find(i=>i.id===id);
+  if(f) f.qty+=qty; else c.push({id,qty});
+  setCart(c);
+  if(!silent) toast('🛒 장바구니에 담았어요');
+  render();
+}
+function buyNow(id){
+  if(!state.user){ go('login'); return; }
+  addToCart(id,1,true); go('cart');
+}
+
+/* ---------- 장바구니 ---------- */
+function CartView(v){
+  const items=cartItems();
+  if(!items.length){ v.innerHTML='<div class="empty"><div class="ee">🛒</div><div class="et">장바구니가 비었어요</div><div class="es">신선한 상품을 담아보세요</div><div style="margin-top:22px"><button class="btn primary" onclick="go(\'home\')">쇼핑하러 가기</button></div></div>'; return; }
+  const sub=cartSubtotal(), ship=shipFee(sub);
+  v.innerHTML=`
+    <div id="ci"></div>
+    <div class="divider"></div>
+    <div class="sec">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>상품금액</span><span>${won(sub)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>배송비</span><span>${ship?won(ship):'무료'}</span></div>
+      <div class="hr" style="margin:10px 0"></div>
+      <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800"><span>결제예정금액</span><span style="color:var(--primary)">${won(sub+ship)}</span></div>
+    </div>
+    <div class="fixedbar"><button class="btn primary" onclick="goCheckout()">${won(sub+ship)} 주문하기</button></div>`;
+  $('#ci').innerHTML=items.map(it=>`
+    <div class="row">
+      <div class="rthumb">${it.emoji||'📦'}</div>
+      <div class="rbody"><div class="rtitle">${esc(it.name)}</div><div class="rsub">${won(it.price)}</div>
+        <div style="margin-top:8px"><span class="qty">
+          <button onclick="changeQty('${it.id}',-1)">−</button><span>${it.qty}</span><button onclick="changeQty('${it.id}',1)">+</button>
+        </span></div>
+      </div>
+      <div class="rright"><button class="hicon" style="font-size:16px" onclick="removeCart('${it.id}')">✕</button>
+        <div style="font-weight:800;margin-top:18px">${won(it.price*it.qty)}</div></div>
+    </div>`).join('');
+}
+function changeQty(id,d){ const c=state.cart.slice(); const f=c.find(i=>i.id===id); if(!f)return; f.qty=Math.max(1,f.qty+d); setCart(c); render(); }
+function removeCart(id){ setCart(state.cart.filter(i=>i.id!==id)); render(); }
+function goCheckout(){ if(!state.user){ go('login'); return; } go('checkout'); }
+
+/* ---------- 체크아웃 ---------- */
+function CheckoutView(v){
+  const items=cartItems(); if(!items.length){ go('cart'); return; }
+  const sub=cartSubtotal(), ship=shipFee(sub), total=sub+ship;
+  const u=state.user;
+  v.innerHTML=`
+    <div class="sec"><div class="sec-title" style="font-size:16px">받는 사람</div></div>
+    <div class="sec" style="padding-top:0">
+      <div class="field"><label>이름</label><input class="input" id="rname" value="${esc(u.name||'')}"></div>
+      <div class="field"><label>연락처</label><input class="input" id="rphone" value="${esc(u.phone||'')}" placeholder="010-0000-0000"></div>
+      <div class="field"><label>주소</label><input class="input" id="raddr" placeholder="배송지를 입력하세요"></div>
+      <div class="field"><label>배송 요청사항</label><input class="input" id="rmemo" placeholder="예) 문 앞에 놔주세요"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="sec"><div class="sec-title" style="font-size:16px">결제 수단</div></div>
+    <div class="scroll-x">
+      ${['카드','계좌이체','간편결제'].map((m,i)=>`<div class="chip ${i===0?'on':''}" data-pm="${m}">${m}</div>`).join('')}
+    </div>
+    <div class="divider"></div>
+    <div class="sec">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>상품금액</span><span>${won(sub)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:var(--text2)"><span>배송비</span><span>${ship?won(ship):'무료'}</span></div>
+      <div class="hr" style="margin:10px 0"></div>
+      <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800"><span>최종 결제금액</span><span style="color:var(--primary)">${won(total)}</span></div>
+    </div>
+    ${hasBackend()&&CONFIG.TOSS_CLIENT_KEY?'':'<div class="notice">💳 현재 결제는 <b>시뮬레이션</b>으로 처리됩니다. 실결제는 토스 클라이언트 키 + 백엔드 연결 후 자동 활성화됩니다.</div>'}
+    <div class="fixedbar"><button class="btn cta" id="payBtn" onclick="pay(${total})">${won(total)} 결제하기</button></div>`;
+  v.querySelectorAll('[data-pm]').forEach(c=>c.onclick=()=>{v.querySelectorAll('[data-pm]').forEach(x=>x.classList.remove('on'));c.classList.add('on');});
+}
+
+async function pay(total){
+  const btn=$('#payBtn'); if(btn){btn.disabled=true;btn.textContent='주문 생성 중...';}
+  const items=cartItems().map(i=>({id:i.id,name:i.name,price:i.price,qty:i.qty,emoji:i.emoji}));
+  const sub=cartSubtotal(), ship=shipFee(sub);
+  try{
+    const order = await api('createOrder',{items,amount:total,ship:{
+      name:$('#rname')?.value, phone:$('#rphone')?.value, addr:$('#raddr')?.value, memo:$('#rmemo')?.value }});
+    const useToss = /^(test_ck_|live_ck_)/.test(CONFIG.TOSS_CLIENT_KEY) && typeof TossPayments!=='undefined';
+    if(useToss){
+      const toss=TossPayments(CONFIG.TOSS_CLIENT_KEY);
+      await toss.requestPayment('카드',{
+        amount: total, orderId: order.id,
+        orderName: items[0].name + (items.length>1?` 외 ${items.length-1}건`:''),
+        customerName: state.user.name,
+        successUrl: location.origin+location.pathname+'?pay=success',
+        failUrl: location.origin+location.pathname+'?pay=fail',
+      });
+      return; // 토스 페이지로 리다이렉트
+    }
+    // 시뮬레이션 결제
+    await new Promise(r=>setTimeout(r,700));
+    await api('confirmPayment',{orderId:order.id, paymentKey:'sim_'+uid(), amount:total});
+    finishPayment(order.id, total);
+  }catch(e){
+    toast('결제 실패: '+e.message);
+    if(btn){btn.disabled=false;btn.textContent=won(total)+' 결제하기';}
+  }
+}
+function finishPayment(orderId,total){
+  setCart([]);
+  state._lastPay={orderId,total};
+  go('paySuccess');
+}
+
+/* ---------- 결제 성공 ---------- */
+function PaySuccessView(v){
+  const lp=state._lastPay||{};
+  v.innerHTML=`<div class="empty" style="padding-top:80px">
+    <div class="ee" style="font-size:72px">✅</div>
+    <div class="et" style="font-size:20px;color:var(--text)">결제가 완료됐어요!</div>
+    <div class="es">주문번호 ${esc(lp.orderId||'-')}</div>
+    <div style="font-size:24px;font-weight:800;margin:18px 0;color:var(--primary)">${won(lp.total||0)}</div>
+    <div style="display:flex;gap:10px;max-width:320px;margin:24px auto 0">
+      <button class="btn line" onclick="go('orders')">주문 내역</button>
+      <button class="btn primary" onclick="go('home')">계속 쇼핑</button>
+    </div></div>`;
+}
+
+/* ---------- 로그인 ---------- */
+function LoginView(v){
+  v.innerHTML=`
+    <div class="sec" style="padding-top:32px;text-align:center">
+      <div style="font-size:40px">🌱</div>
+      <div style="font-size:22px;font-weight:800;margin-top:10px">${CONFIG.BRAND}에 오신 걸 환영해요</div>
+      <div style="color:var(--text3);font-size:14px;margin-top:6px">로그인하고 신선한 혜택을 받아보세요</div>
+    </div>
+    <div class="sec">
+      <div class="field"><label>이메일</label><input class="input" id="email" type="email" placeholder="you@example.com"></div>
+      <div class="field"><label>비밀번호</label><input class="input" id="pw" type="password" placeholder="비밀번호"></div>
+      <button class="btn primary" id="loginBtn" style="margin-top:6px" onclick="doLogin()">로그인</button>
+      <div style="text-align:center;margin:16px 0;color:var(--text4);font-size:13px">또는</div>
+      <button class="btn kakao" style="margin-bottom:10px" onclick="social('kakao')">💬 카카오로 시작하기</button>
+      <button class="btn naver" onclick="social('naver')">Ⓝ 네이버로 시작하기</button>
+      <div style="text-align:center;margin-top:22px;font-size:14px;color:var(--text2)">
+        아직 회원이 아니신가요? <b style="color:var(--primary)" onclick="go('signup')">회원가입</b></div>
+    </div>`;
+}
+async function doLogin(){
+  const email=$('#email').value.trim(), pw=$('#pw').value;
+  if(!email||!pw){ toast('이메일과 비밀번호를 입력하세요'); return; }
+  const btn=$('#loginBtn'); btn.disabled=true; btn.textContent='로그인 중...';
+  try{ const r=await api('login',{email,pw}); afterAuth(r); toast('환영합니다, '+r.user.name+'님 🌱'); }
+  catch(e){ toast(e.message); btn.disabled=false; btn.textContent='로그인'; }
+}
+async function social(provider){
+  try{ const r=await api('social',{provider}); afterAuth(r); toast((provider==='kakao'?'카카오':'네이버')+' 로그인 완료'); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------- 회원가입 ---------- */
+function SignupView(v){
+  v.innerHTML=`
+    <div class="sec" style="padding-top:24px">
+      <div style="font-size:22px;font-weight:800">회원가입</div>
+      <div style="color:var(--text3);font-size:14px;margin-top:6px">30초면 충분해요</div>
+    </div>
+    <div class="sec" style="padding-top:8px">
+      <div class="field"><label>이름</label><input class="input" id="name" placeholder="이름"></div>
+      <div class="field"><label>이메일</label><input class="input" id="email" type="email" placeholder="you@example.com"></div>
+      <div class="field"><label>휴대폰 번호</label><input class="input" id="phone" placeholder="010-0000-0000"></div>
+      <div class="field"><label>비밀번호</label><input class="input" id="pw" type="password" placeholder="6자 이상"></div>
+      <button class="btn primary" id="suBtn" style="margin-top:6px" onclick="doSignup()">가입하고 시작하기</button>
+      <div style="text-align:center;margin-top:18px;font-size:14px;color:var(--text2)">
+        이미 회원이신가요? <b style="color:var(--primary)" onclick="go('login')">로그인</b></div>
+    </div>`;
+}
+async function doSignup(){
+  const name=$('#name').value.trim(), email=$('#email').value.trim(), phone=$('#phone').value.trim(), pw=$('#pw').value;
+  if(!name||!email||!pw){ toast('이름·이메일·비밀번호는 필수예요'); return; }
+  if(pw.length<6){ toast('비밀번호는 6자 이상'); return; }
+  const btn=$('#suBtn'); btn.disabled=true; btn.textContent='가입 중...';
+  try{ const r=await api('signup',{name,email,phone,pw}); afterAuth(r); toast('가입 완료! 환영해요 🌱'); }
+  catch(e){ toast(e.message); btn.disabled=false; btn.textContent='가입하고 시작하기'; }
+}
+function afterAuth(r){
+  state.token=r.token; state.user=r.user; ls.set('token',r.token);
+  go(state.cart.length?'cart':'home');
+}
+async function doLogout(){ await api('logout'); state.user=null; state.token=null; ls.set('token',null); toast('로그아웃 되었습니다'); go('home'); }
+
+/* ---------- 판매자 센터(요약) ---------- */
+function SellerView(v){
+  if(!state.user){ return requireLogin(v,'판매자 센터는 로그인 후 이용 가능해요'); }
+  api('listOrders').then(orders=>{
+    const revenue=orders.filter(o=>o.status==='결제완료').reduce((s,o)=>s+o.amount,0);
+    const fee=Math.round(revenue*CONFIG.FEE_RATE);
+    v.innerHTML=`
+      <div class="stats">
+        <div class="stat"><div class="sl">누적 매출</div><div class="sv g">${won(revenue)}</div></div>
+        <div class="stat"><div class="sl">주문 건수</div><div class="sv">${orders.length}건</div></div>
+        <div class="stat"><div class="sl">플랫폼 수수료(3%)</div><div class="sv">${won(fee)}</div></div>
+        <div class="stat"><div class="sl">정산 예정(D+7)</div><div class="sv g">${won(revenue-fee)}</div></div>
+      </div>
+      <div class="sec"><div class="sec-title" style="font-size:16px">최근 주문</div></div>
+      <div id="so"></div>`;
+    $('#so').innerHTML = orders.length? orders.slice(0,10).map(o=>`
+      <div class="row"><div class="rbody"><div class="rtitle">${esc(o.id)}</div>
+        <div class="rsub">${new Date(o.createdAt).toLocaleDateString('ko-KR')} · ${o.items.length}개 품목</div></div>
+        <div class="rright"><span class="pill ${o.status==='결제완료'?'g':'o'}">${esc(o.status)}</span>
+          <div style="font-weight:800;margin-top:8px">${won(o.amount)}</div></div></div>`).join('')
+      : '<div class="empty"><div class="ee">🏪</div><div class="et">아직 주문이 없어요</div></div>';
+  });
+}
+
+/* ============================================================
+   부팅 — 결제 리다이렉트 처리 + 세션 복구
+   ============================================================ */
+async function boot(){
+  state.token = ls.get('token', null);
+  // 토스 결제 리다이렉트 처리
+  const qs=new URLSearchParams(location.search);
+  if(qs.get('pay')==='success'){
+    const orderId=qs.get('orderId'), paymentKey=qs.get('paymentKey'), amount=Number(qs.get('amount'));
+    try{ await api('confirmPayment',{orderId,paymentKey,amount}); }catch(e){}
+    history.replaceState({},'',location.pathname);
+    setCart([]); state._lastPay={orderId,total:amount};
+    try{ state.user=await api('me'); }catch(e){}
+    state.page='paySuccess'; render(); return;
+  }
+  if(qs.get('pay')==='fail'){ history.replaceState({},'',location.pathname); toast('결제가 취소되었어요'); }
+  // 세션 복구
+  try{ state.user = await api('me'); }catch(e){}
+  await loadProducts();
+  render();
+}
+window.addEventListener('popstate',()=>{ /* 단순 라우터: 홈으로 */ });
+boot();
+</script>
+</body>
+</html>
