@@ -1,0 +1,18 @@
+{
+  "name": "콩나물 — 신선 분양 커머스",
+  "short_name": "콩나물",
+  "description": "SNS만으로 내 쇼핑몰, 회원·결제·주문·정산까지. 무자본 분양 신선 커머스.",
+  "start_url": "./?utm_source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#16A34A",
+  "lang": "ko",
+  "categories": ["shopping", "food", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
