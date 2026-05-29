@@ -19,7 +19,22 @@ soccermom-integration/app/api/analyze-precise/status/[jobId]/route.js
                                                →  soccermom/app/api/analyze-precise/status/[jobId]/route.js
 soccermom-integration/components/PrecisionResult.jsx
                                                →  soccermom/components/PrecisionResult.jsx
+soccermom-integration/components/PlayerSelector.jsx
+                                               →  soccermom/components/PlayerSelector.jsx
 ```
+
+### 클릭 선수지정 사용
+업로드한 영상을 재생→일시정지→선수 클릭→이름/번호 입력→분석. 부모 컴포넌트에서:
+```jsx
+const [jobId, setJobId] = useState(null);
+return jobId
+  ? <PrecisionResult jobId={jobId} />
+  : <PlayerSelector videoUrl={playableUrl} gsUri={gsUri} onSubmitted={setJobId} />;
+```
+- `playableUrl`: 업로드 영상의 재생 URL(`lib/gcs.js` 의 `createReadSignedUrl(gsUri)`).
+- 클릭 좌표는 영상 원본 픽셀로 자동 환산되고, 클릭 시점(초)도 함께 전송됩니다.
+- ⚠️ 클릭 지정은 **업로드 mp4** 에서만 동작(유튜브 임베드는 iframe이라 픽셀 클릭 불가).
+  유튜브 링크는 클릭 없이 분석하세요.
 
 ## 2) npm 패키지 설치
 ```bash

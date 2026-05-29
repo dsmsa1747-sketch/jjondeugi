@@ -39,6 +39,7 @@ def analyze_video(
     pitch_width_m: float = 68.0,
     target_point: tuple[float, float] | None = None,
     target_meta: dict | None = None,
+    target_time_sec: float | None = None,
     progress_cb=None,
 ) -> dict:
     cap = cv2.VideoCapture(input_path)
@@ -91,8 +92,12 @@ def analyze_video(
         if not teams_fitted and len(players) >= 2:
             teams_fitted = teams.fit(frame, players)
 
-        # 클릭 선수지정 → 가장 가까운 트랙 잠금
-        if target_point is not None and target_id is None and players:
+        # 클릭 선수지정 → 클릭한 '시점'의 프레임에서 가장 가까운 트랙 잠금
+        # (target_time_sec 가 있으면 그 시점 도달 후부터 매칭, 없으면 첫 프레임에서)
+        reached_click_time = (
+            target_time_sec is None or frame_idx >= int(target_time_sec * fps)
+        )
+        if target_point is not None and target_id is None and players and reached_click_time:
             tx, ty = target_point
             target_id = min(
                 players,

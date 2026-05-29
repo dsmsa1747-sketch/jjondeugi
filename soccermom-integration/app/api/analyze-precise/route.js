@@ -19,7 +19,8 @@ export async function POST(req) {
       youtubeUrl, // 유튜브 링크 또는
       gsUri, // 이미 업로드된 gs:// 경로
       sourcePoints, // (선택) 원근변환 보정 4점 [[x,y]*4]
-      targetPoint, // (선택) 클릭 선수지정 화면좌표 [x,y]
+      targetPoint, // (선택) 클릭 선수지정 화면좌표 [x,y] (영상 원본 픽셀)
+      targetTime, // (선택) 클릭한 시점(초)
       targetMeta, // (선택) { name, number, jersey }
     } = body;
 
@@ -47,6 +48,7 @@ export async function POST(req) {
       video,
       source_points: sourcePoints || null,
       target_point: targetPoint || null,
+      target_time: targetTime ?? null,
       target_meta: targetMeta || null,
     });
 

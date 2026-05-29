@@ -48,8 +48,9 @@ class AnalyzeRequest(BaseModel):
     output_prefix: str | None = None
     # 원근변환 보정점(화면 4점). 없으면 거리/속도는 상대 추정값(px).
     source_points: list[list[float]] | None = None
-    # 클릭 선수지정: 화면 좌표 + 메타(이름/번호/유니폼)
+    # 클릭 선수지정: 화면 좌표(영상 원본 픽셀) + 클릭 시점(초) + 메타(이름/번호/유니폼)
     target_point: list[float] | None = None
+    target_time: float | None = None
     target_meta: dict | None = None
     # 콜백/동기 처리 여부
     run_async: bool = True
@@ -92,6 +93,7 @@ def _run_job(req: AnalyzeRequest):
             pitch_width_m=settings.PITCH_WIDTH_M,
             target_point=tuple(req.target_point) if req.target_point else None,
             target_meta=req.target_meta,
+            target_time_sec=req.target_time,
             progress_cb=lambda p: job_status.mark_processing(job_id, progress=p),
         )
 
