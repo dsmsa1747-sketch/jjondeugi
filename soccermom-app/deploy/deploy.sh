@@ -6,13 +6,19 @@
 # ──────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# ── 여기만 채우세요 ──────────────────────────────────────────
-PROJECT_ID="your-gcp-project-id"
-REGION="asia-northeast3"          # 서울 리전 (앱은 한국 가까운 곳)
+# ── 자동 인식 (편집 불필요) ──────────────────────────────────
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+REGION="${REGION:-asia-northeast3}"          # 서울 리전 (앱은 한국 가까운 곳)
 SERVICE="soccermom-app"
-# 워커 배포 후 나온 URL (정밀분석 호출용)
-WORKER_URL="https://soccermom-yolo-worker-xxxx.run.app"
+# 워커 URL 자동 조회(이미 배포돼 있으면). 없으면 빈 값으로 두고 나중에 콘솔에서 추가.
+WORKER_URL="${WORKER_URL:-$(gcloud run services describe soccermom-yolo-worker --region us-central1 --format='value(status.url)' 2>/dev/null)}"
 # ─────────────────────────────────────────────────────────────
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "❌ 프로젝트가 설정 안 됨. 먼저:  gcloud config set project soccermom-bcbfd" >&2
+  exit 1
+fi
+echo "▶ 사용 프로젝트: $PROJECT_ID / 리전: $REGION / 워커URL: ${WORKER_URL:-(없음)}"
 
 gcloud config set project "$PROJECT_ID"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com

@@ -6,16 +6,26 @@
 # ──────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# ── 여기만 채우세요 ──────────────────────────────────────────
-PROJECT_ID="your-gcp-project-id"        # GCP 프로젝트 ID
-REGION="us-central1"                    # Cloud Run GPU 지원 리전 (L4 가능 리전)
+# ── 자동 인식 (편집 불필요) ──────────────────────────────────
+# PROJECT_ID 는 현재 gcloud 설정 프로젝트를 자동 사용.
+# 바꾸려면:  PROJECT_ID=다른ID bash deploy/deploy.sh
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+REGION="${REGION:-us-central1}"          # Cloud Run GPU 지원 리전 (L4)
 SERVICE="soccermom-yolo-worker"
-BUCKET="${PROJECT_ID}-soccermom"        # 영상/결과 저장 버킷 (없으면 아래서 생성)
-MODEL_GS="gs://${BUCKET}/models/best.pt"  # 학습된 모델 위치 (없으면 빈 값으로 두면 테스트 폴백)
-# 회장님 자동보고(텔레그램). 안 쓰면 NOTIFY_PROVIDER=none 으로.
-NOTIFY_PROVIDER="telegram"
-TELEGRAM_BOT_TOKEN=""   # BotFather 발급 토큰
-TELEGRAM_CHAT_ID=""     # 본인 챗 ID
+BUCKET="${BUCKET:-${PROJECT_ID}-soccermom}"  # 영상/결과 저장 버킷 (없으면 자동 생성)
+# 학습된 모델 위치. 기본은 빈 값 → yolov8 폴백으로 '동작 확인'부터 가능.
+# best.pt 학습/업로드 후:  MODEL_GS="gs://${BUCKET}/models/best.pt" 로 지정해 재배포.
+MODEL_GS="${MODEL_GS:-}"
+# 회장님 자동보고(텔레그램). 안 쓰면 NOTIFY_PROVIDER=none.
+NOTIFY_PROVIDER="${NOTIFY_PROVIDER:-none}"
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "❌ 프로젝트가 설정 안 됨. 먼저:  gcloud config set project soccermom-bcbfd" >&2
+  exit 1
+fi
+echo "▶ 사용 프로젝트: $PROJECT_ID / 리전: $REGION / 버킷: $BUCKET"
 # ─────────────────────────────────────────────────────────────
 
 gcloud config set project "$PROJECT_ID"
