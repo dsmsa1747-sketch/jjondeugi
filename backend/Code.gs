@@ -18,16 +18,19 @@
  **************************************************************/
 
 const SHEETS = {
-  USERS:'Users', PRODUCTS:'Products', ORDERS:'Orders', SETTLE:'Settlements', LOGS:'Logs'
+  USERS:'Users', PRODUCTS:'Products', ORDERS:'Orders', SETTLE:'Settlements', WITHDRAW:'Withdrawals', LOGS:'Logs'
 };
 const HEADERS = {
-  Users:       ['id','email','name','phone','pwHash','salt','role','createdAt'],
+  Users:       ['id','email','name','phone','pwHash','salt','role','ownerCode','createdAt'],
   Products:    ['id','name','price','cat','emoji','seller','stock','sales','desc'],
   Orders:      ['id','uid','itemsJson','amount','shipJson','status','paymentKey','createdAt','paidAt'],
   Settlements: ['id','sellerId','amount','fee','net','status','date'],
+  Withdrawals: ['id','uid','gross','tax','net','status','createdAt'],
   Logs:        ['ts','action','detail'],
 };
-const FEE_RATE = 0.03;
+const FEE_RATE = 0.07;     // 콩나물 플랫폼 수수료 7% (브랜드 90 / 콩나물 7 / 오너 3)
+const OWNER_RATE = 0.03;   // 오너 캐시백 3%
+const WITHHOLD = 0.033;    // 출금 시 3.3% 원천징수
 
 /* ---------- 진입점 ---------- */
 function doGet(e){
@@ -56,6 +59,10 @@ function route_(action, token, p){
     case 'listProducts': return listProducts_();
     case 'getProduct':   return getProduct_(p.id);
     case 'listLive':     return listLive_();
+    case 'listFunding':  return listFunding_();
+    case 'becomeOwner':  return becomeOwner_(requireUid_(token));
+    case 'ownerStats':   return ownerStats_(requireUid_(token));
+    case 'requestWithdraw': return requestWithdraw_(requireUid_(token), p);
     case 'signup':       return signup_(p);
     case 'login':        return login_(p);
     case 'social':       return social_(p);
@@ -128,6 +135,44 @@ function listLive_(){
     {id:'l2',title:'새벽농장 콩나물 키우기 비하인드',host:'새벽농장',status:'soon',startAt:'오늘 20:00',emoji:'🌱'},
     {id:'l3',title:'로스터리K 원두 블라인드 테스트',host:'로스터리K',status:'soon',startAt:'내일 19:30',emoji:'☕'},
   ];
+}
+function listFunding_(){
+  return [
+    {id:'f1',name:'산지직송 제주 감귤 공동구매',emoji:'🍊',goal:5000000,raised:4120000,supporters:512,dday:3},
+    {id:'f2',name:'무농약 콩나물 정기배송 펀딩',emoji:'🌱',goal:3000000,raised:1850000,supporters:266,dday:7},
+    {id:'f3',name:'스페셜티 원두 한정 로스팅',emoji:'☕',goal:2000000,raised:2240000,supporters:401,dday:1},
+  ];
+}
+
+/* ---------- 분양 오너 / 수익 / 출금 ---------- */
+function becomeOwner_(uid){
+  const users=rows_(SHEETS.USERS); const u=users.find(x=>x.id===uid);
+  if(!u) throw new Error('회원 정보를 찾을 수 없습니다.');
+  const code=(u.name||'KN').slice(0,2).toUpperCase()+uid_().slice(0,4).toUpperCase();
+  updateRow_(SHEETS.USERS,'id',uid,{role:'owner',ownerCode:u.ownerCode||code});
+  notify_(`🏪 신규 분양몰 오너: ${u.name} (${u.ownerCode||code})`);
+  const nu=rows_(SHEETS.USERS).find(x=>x.id===uid); return safeUser_(nu);
+}
+function ownerStats_(uid){
+  const u=rows_(SHEETS.USERS).find(x=>x.id===uid)||{};
+  const mine=rows_(SHEETS.ORDERS).filter(o=>o.uid===uid && o.status!=='결제대기');
+  const gmv=mine.reduce((t,o)=>t+(Number(o.amount)||0),0);
+  const earned=Math.round(gmv*OWNER_RATE);
+  const withdraws=rows_(SHEETS.WITHDRAW).filter(w=>w.uid===uid)
+    .map(w=>({...w,gross:Number(w.gross),tax:Number(w.tax),net:Number(w.net),createdAt:new Date(w.createdAt).getTime()}));
+  const grossOut=withdraws.reduce((t,w)=>t+w.gross,0);
+  return {ownerCode:u.ownerCode||'-', gmv, earned, orders:mine.length,
+    available:Math.max(0,earned-grossOut), withdrawn:withdraws.reduce((t,w)=>t+w.net,0), withdraws};
+}
+function requestWithdraw_(uid,p){
+  const gross=Math.floor(Number(p.amount)||0);
+  if(gross<10000) throw new Error('최소 출금액은 10,000원입니다.');
+  const st=ownerStats_(uid);
+  if(gross>st.available) throw new Error('출금 가능액을 초과했습니다.');
+  const tax=Math.round(gross*WITHHOLD); const net=gross-tax;
+  append_(SHEETS.WITHDRAW,{id:uid_(),uid,gross,tax,net,status:'신청완료',createdAt:new Date()});
+  notify_(`💸 출금 신청\n신청 ₩${gross.toLocaleString('ko-KR')} · 세금 ₩${tax.toLocaleString('ko-KR')} · 실수령 ₩${net.toLocaleString('ko-KR')}`);
+  return {gross,tax,net};
 }
 
 /* ---------- 회원 ---------- */

@@ -99,11 +99,17 @@ const CONFIG = {
 
 | 시트 | 컬럼 |
 |------|------|
-| **Users** | id, email, name, phone, pwHash, salt, role, createdAt |
+| **Users** | id, email, name, phone, pwHash, salt, role(buyer/owner), ownerCode, createdAt |
 | **Products** | id, name, price, cat, emoji, seller, stock, sales, desc |
 | **Orders** | id, uid, itemsJson, amount, shipJson, status, paymentKey, createdAt, paidAt |
 | **Settlements** | id, sellerId, amount, fee, net, status, date |
+| **Withdrawals** | id, uid, gross, tax(3.3%), net, status, createdAt |
 | **Logs** | ts, action, detail |
+
+### 💸 수익 구조 (분양 모델)
+- 거래액 분배: **브랜드사 90% / 콩나물 7% / 오너 3%(즉시 캐시백)**
+- 정산: 배송완료 **D+7** 자동(매일 03:00 트리거)
+- 출금: 신청 시 **3.3% 원천징수** 자동 계산 → 실수령액 지급
 
 상품 추가/수정은 **Products 시트에 직접 입력**하면 앱에 즉시 반영됩니다.
 
