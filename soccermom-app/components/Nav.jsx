@@ -52,7 +52,7 @@ export default function Nav() {
           </div>
         ) : (
           <button
-            onClick={() => signIn()}
+            onClick={() => signIn(undefined, { callbackUrl: "/analyze" })}
             style={{
               background: "#22c55e",
               border: "none",
