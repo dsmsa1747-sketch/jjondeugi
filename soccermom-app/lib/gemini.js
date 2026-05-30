@@ -41,7 +41,7 @@ export async function analyzeFast(youtubeUrl) {
 축구가 아니면 strengths/improvements/drills 는 빈 배열, highlights 는 빈 문자열로 두세요.`;
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
