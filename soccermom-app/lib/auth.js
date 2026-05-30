@@ -71,9 +71,7 @@ export function buildAuthOptions() {
     ],
     secret: process.env.NEXTAUTH_SECRET,
     session: { strategy: "jwt" },
-    pages: {
-      signIn: "/",
-    },
+    // 기본 로그인 페이지 사용 (구글/카카오/네이버 선택 화면)
     callbacks: {
       async jwt({ token, user }) {
         if (user) {
@@ -105,7 +103,8 @@ export const authOptions = {
     return process.env.NEXTAUTH_SECRET;
   },
   session: { strategy: "jwt" },
-  pages: { signIn: "/" },
+  // pages.signIn 을 지정하지 않으면 NextAuth 기본 로그인 페이지(/api/auth/signin)가
+  // 떠서 구글/카카오/네이버 중 선택할 수 있습니다. (홈으로 보내면 선택 UI가 없어 멈춤)
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
