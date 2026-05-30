@@ -251,22 +251,36 @@ const SEED_FUNDING = [
 const CATS = ['전체','채소','과일','축산','가공식품'];
 
 /* ============================================================
-   API 레이어 — 백엔드 있으면 GAS 호출, 없으면 데모(localStorage)
+   API 레이어
+   - Apps Script 웹앱 위에서 실행되면 google.script.run 사용(동일 출처, CORS 없음)
+   - CONFIG.API_BASE(script.google.com) 설정 시 fetch 사용
+   - 둘 다 아니면 데모(localStorage)
    ============================================================ */
+const onGAS = () => typeof google!=='undefined' && google.script && google.script.run;
 const hasBackend = () => /^https:\/\/script\.google\.com/.test(CONFIG.API_BASE);
 
 async function api(action, payload={}){
+  // ① Apps Script 웹앱이 화면을 직접 서빙하는 경우
+  if(onGAS()){
+    return new Promise((resolve,reject)=>{
+      google.script.run
+        .withSuccessHandler(json=>{ try{ const d=JSON.parse(json); d.ok?resolve(d.result):reject(new Error(d.error||'요청 실패')); }catch(e){ reject(e); } })
+        .withFailureHandler(err=>reject(new Error(err&&err.message||'요청 실패')))
+        .apiCall(JSON.stringify({action, token: state.token, payload}));
+    });
+  }
+  // ② 별도 배포된 GAS 백엔드를 fetch로 호출
   if(hasBackend()){
     const res = await fetch(CONFIG.API_BASE, {
       method:'POST',
-      // GAS 웹앱 CORS preflight 회피를 위해 text/plain 사용
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // CORS preflight 회피
       body: JSON.stringify({action, token: state.token, payload}),
     });
     const data = await res.json();
     if(!data.ok) throw new Error(data.error||'요청 실패');
     return data.result;
   }
+  // ③ 데모 모드
   return demoApi(action, payload);
 }
 

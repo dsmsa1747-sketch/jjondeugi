@@ -34,8 +34,25 @@ const WITHHOLD = 0.033;    // 출금 시 3.3% 원천징수
 
 /* ---------- 진입점 ---------- */
 function doGet(e){
-  return ContentService.createTextOutput(JSON.stringify({ok:true, service:'콩나물 API', time:new Date()}))
-    .setMimeType(ContentService.MimeType.JSON);
+  // Index.html 파일이 있으면 앱 화면을 그대로 서빙(프론트+백엔드 올인원, 100% Google 호스팅)
+  try{
+    return HtmlService.createHtmlOutputFromFile('Index')
+      .setTitle('콩나물')
+      .addMetaTag('viewport','width=device-width, initial-scale=1.0, viewport-fit=cover')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }catch(err){
+    // Index.html 미추가 시 상태 JSON 반환
+    return ContentService.createTextOutput(JSON.stringify({ok:true, service:'콩나물 API', time:new Date()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 화면(Index.html)이 google.script.run 으로 호출하는 동일 출처 API 브리지
+function apiCall(bodyJson){
+  let body={};
+  try{ body = JSON.parse(bodyJson||'{}'); }catch(_){}
+  try{ return JSON.stringify({ok:true, result: route_(body.action, body.token, body.payload||{})}); }
+  catch(err){ log_('error','apiCall '+body.action+': '+err.message); return JSON.stringify({ok:false, error:String(err.message||err)}); }
 }
 
 function doPost(e){
