@@ -77,6 +77,38 @@ function FastResultView({ jobId }) {
         </div>
       )}
 
+      {/* 능력치 그래프 (scores) */}
+      {result.scores && Object.keys(result.scores).length > 0 && (
+        <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, color: "#fff", fontSize: 15 }}>📊 능력치 분석</h3>
+            {result.overall != null && (
+              <span style={{ fontFamily: "var(--font-data)", fontSize: 28, fontWeight: 900, color: "var(--color-accent)" }}>
+                {result.overall}<span style={{ fontSize: 14, color: "var(--color-text-tertiary)" }}> /100</span>
+              </span>
+            )}
+          </div>
+          {Object.entries(result.scores).map(([k, v]) => {
+            const val = Math.max(0, Math.min(100, Number(v) || 0));
+            const color = val >= 70 ? "var(--color-accent)" : val >= 45 ? "#f59e0b" : "#ef4444";
+            return (
+              <div key={k} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                  <span style={{ color: "var(--color-text-secondary)", fontWeight: 600 }}>{k}</span>
+                  <span style={{ color: "#fff", fontWeight: 800, fontFamily: "var(--font-data)" }}>{val}</span>
+                </div>
+                <div style={{ height: 8, background: "var(--color-bg-section)", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ width: `${val}%`, height: "100%", background: color, borderRadius: 999, transition: "width .6s" }} />
+                </div>
+              </div>
+            );
+          })}
+          <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 8, marginBottom: 0 }}>
+            ※ AI가 영상에서 관찰한 플레이 기반 추정치입니다. 절대 평가가 아닙니다.
+          </p>
+        </div>
+      )}
+
       {/* 역량 요약 섹션 — styled cards with colored left-borders */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 20 }}>
         {result.strengths?.length > 0 && (
