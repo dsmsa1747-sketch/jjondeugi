@@ -42,8 +42,13 @@ export default function RootLayout({ children }) {
             {children}
           </main>
           <footer style={{ textAlign: "center", padding: "24px 16px", fontSize: 13, color: "var(--color-text-tertiary)", borderTop: "1px solid var(--color-border)", background: "var(--color-bg-card)" }}>
-            <p>
-              &copy; 2026 사커맘 | <a href="/privacy" style={{ color: "var(--color-text-secondary)" }}>개인정보처리방침</a> | <a href="/terms" style={{ color: "var(--color-text-secondary)" }}>이용약관</a>
+            <p style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              <span>&copy; 2026 사커맘</span>
+              <a href="/privacy" style={{ color: "var(--color-text-secondary)" }}>개인정보처리방침</a>
+              <a href="/terms" style={{ color: "var(--color-text-secondary)" }}>이용약관</a>
+              <a href="/refund" style={{ color: "var(--color-text-secondary)" }}>환불정책</a>
+              <a href="/support" style={{ color: "var(--color-text-secondary)" }}>고객지원</a>
+              <a href="/ads" style={{ color: "var(--color-text-secondary)" }}>광고문의</a>
             </p>
             <p style={{ marginTop: 4, fontSize: 12 }}>AI 측정값으로 오차가 있을 수 있으며, 전문 코치의 판단을 대체하지 않습니다.</p>
           </footer>
