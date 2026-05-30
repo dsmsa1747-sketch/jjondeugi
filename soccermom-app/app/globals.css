@@ -224,3 +224,51 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: 700; lin
 ::-webkit-scrollbar-track { background: var(--color-bg-section); }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-pill); }
 ::selection { background: rgba(197, 255, 48, 0.2); color: var(--color-accent-light); }
+
+/* ============================================
+   반응형 글씨·정렬 보정 (모바일/PC 공통)
+   ============================================ */
+
+/* 본문 영역: 화면 폭에 맞춰 가운데 정렬 + 좌우 여백 일관 */
+main { width: 100%; }
+
+/* 긴 영어/URL이 모바일에서 화면 밖으로 넘치지 않도록 */
+h1, h2, h3, p, a, span, li, td, th, label, button, input {
+  overflow-wrap: break-word;
+  word-break: keep-all; /* 한글 단어 단위 줄바꿈 */
+}
+
+/* 입력창·셀렉트·텍스트영역이 부모 폭을 넘지 않도록 */
+input, select, textarea { max-width: 100%; }
+
+/* 표가 좁은 화면에서 가로 스크롤되도록 */
+table { width: 100%; }
+
+/* 데스크탑(기본): 제목 큼 */
+h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); }
+h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); }
+h3 { font-size: clamp(1.05rem, 2.4vw, 1.3rem); }
+
+/* 태블릿 이하 */
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+  main { padding: 16px 14px !important; }
+  /* 좌우 2단 그리드는 모바일에서 세로로 */
+  .grid, [style*="grid-template-columns"] { }
+}
+
+/* 모바일 */
+@media (max-width: 600px) {
+  html { font-size: 14px; }
+  main { padding: 14px 12px !important; }
+  /* 버튼은 모바일에서 폭 꽉 차게(가독성) */
+  .btn-lg { padding: 14px 20px; width: 100%; }
+  /* 카드 안 여백 축소 */
+  .card { border-radius: 12px; }
+  /* 표 셀 패딩 축소 */
+  td, th { padding: 6px 4px !important; font-size: 13px; }
+}
+
+/* 모든 이미지/비디오 반응형 */
+video, img { max-width: 100%; height: auto; }
+
