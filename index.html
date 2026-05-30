@@ -15,7 +15,7 @@
 <style>
 :root{
   --green:#16A34A; --green-d:#15803D; --green-l:#DCFCE7; --green-bg:#F0FDF4;
-  --blue:#1B64DA; --blue-d:#1957C2;
+  --blue:#3F4956; --blue-d:#2F3742;
   --ink:#191F28; --t2:#4E5968; --t3:#8B95A1; --t4:#B0B8C1;
   --bg:#F4F6F8; --card:#FFFFFF; --line:#E5E8EB; --line2:#D1D6DB;
   --red:#F04452; --orange:#FF8A00; --amber:#FFB020; --purple:#7C3AED;
@@ -62,7 +62,7 @@ select.in{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--sh)}
 .pad{padding:18px}
 .pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:7px;font-size:11px;font-weight:700}
-.pill.g{background:var(--green-l);color:var(--green-d)}.pill.b{background:#E5EFFF;color:var(--blue)}
+.pill.g{background:var(--green-l);color:var(--green-d)}.pill.b{background:var(--bg);color:var(--blue)}
 .pill.o{background:#FFF1E0;color:var(--orange)}.pill.r{background:#FFE9EB;color:var(--red)}.pill.gray{background:var(--bg);color:var(--t3)}
 .muted{color:var(--t3)}
 .h1{font-size:24px;font-weight:800;letter-spacing:-.03em}
@@ -100,7 +100,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
 
 /* ---------- Consumer shop ---------- */
 .wrap{max-width:1080px;margin:0 auto;padding:24px 20px}
-.hero{border-radius:22px;padding:40px 34px;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;position:relative;overflow:hidden}
+.hero{border-radius:22px;padding:36px 34px;background:var(--green);color:#fff;position:relative;overflow:hidden}
 .hero h2{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.25}
 .hero p{font-size:15px;opacity:.94;margin-top:10px}
 .hero .em{position:absolute;right:8px;bottom:-16px;font-size:130px;opacity:.22}
@@ -170,7 +170,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
    ===================================================================== */
 const won = n => '₩' + Math.round(Number(n||0)).toLocaleString('ko-KR');
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid = p => (p||'')+Date.now().toString(36).slice(-4)+Math.random().toString(36).slice(2,5);
+let _seq=0; const uid = p => (p||'')+Date.now().toString(36).slice(-4)+(_seq++).toString(36);
 const $ = s => document.querySelector(s);
 const ls = { get:(k,d)=>{try{return JSON.parse(localStorage.getItem('kn2_'+k))??d}catch{return d}}, set:(k,v)=>localStorage.setItem('kn2_'+k,JSON.stringify(v)) };
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
@@ -285,8 +285,8 @@ function Landing(){
     <div class="hero">
       <h2>무자본 분양 커머스,<br>콩나물 플랫폼</h2>
       <p>쇼핑몰 · 분양몰 · 입점업체 · 관리자 — 하나의 플랫폼에서</p>
-      <div class="em">🌱</div>
     </div>
+    ${!backendOn()?`<div style="margin-top:18px;display:flex;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green-l);color:var(--green-d);padding:11px 14px;border-radius:10px;font-size:13px"><b>데모 모드</b> · 표시되는 숫자는 샘플 데이터입니다. 실서비스(Apps Script) 연결 시 실제 데이터로 표시됩니다.</div>`:''}
     <div style="margin-top:30px"><div class="h2">어떤 역할로 들어가시겠어요?</div>
       <div class="sub">아래에서 역할을 선택하세요. 데모 데이터로 바로 둘러볼 수 있습니다.</div></div>
     <div class="roles">
@@ -318,7 +318,7 @@ function ShopHome(){
   const ps=DB.products().filter(x=>x.status==='판매중');
   return `<div class="toolbar"><div class="h1">신선 마켓 🛒</div>
     <button class="btn line sm" onclick="go('cart')">🛒 장바구니 ${cartCount()?'· '+cartCount():''}</button></div>
-    <div class="hero" style="margin-bottom:24px"><h2>오늘 수확한 신선함</h2><p>산지직송 · ${won(30000)} 이상 무료배송</p><div class="em">🥬</div></div>
+    <div class="hero" style="margin-bottom:24px"><h2>오늘 수확한 신선함</h2><p>산지직송 · ${won(30000)} 이상 무료배송</p></div>
     <div class="grid">${ps.map(p=>`<div class="prod" onclick="openProduct('${p.id}')">
       <div class="th">${p.emoji}</div><div class="info">
         <div class="nm">${esc(p.name)}</div><div class="pr">${won(p.price)}</div>
@@ -378,7 +378,7 @@ function ShopCart(){
 }
 function rmCart(id){ DB.setCart(DB.cart().filter(x=>x.id!==id)); render(); }
 function checkout(total){
-  const c=DB.cart(); const o={id:'ORD-'+Math.floor(1000+Math.random()*9000),buyer:'데모구매자',ownerCode:'',items:c,amount:total,status:'결제완료',createdAt:Date.now()};
+  const c=DB.cart(); const o={id:'ORD-'+String(Date.now()).slice(-6),buyer:'데모구매자',ownerCode:'',items:c,amount:total,status:'결제완료',createdAt:Date.now()};
   const os=DB.orders(); os.unshift(o); DB.setOrders(os); DB.setCart([]); S._last=o; go('done');
 }
 function ShopDone(){
