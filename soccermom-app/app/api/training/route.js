@@ -52,7 +52,7 @@ drills 는 4~6개 작성하세요.`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1500, responseMimeType: "application/json" },
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2500, responseMimeType: "application/json" },
         }),
       }
     );

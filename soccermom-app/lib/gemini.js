@@ -61,7 +61,7 @@ export async function analyzeFast(source) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: PROMPT }, videoPart] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1024, responseMimeType: "application/json" },
+        generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: "application/json" },
       }),
     }
   );
@@ -82,14 +82,44 @@ export async function analyzeFast(source) {
 
   const json = await response.json();
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  const finish = json.candidates?.[0]?.finishReason;
   if (!text) throw new Error("Gemini 응답이 비어있습니다.");
 
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("Gemini 응답 파싱 실패: " + text.slice(0, 200));
+  let parsed = tryParseJson(text);
+  if (!parsed) {
+    // 응답이 잘렸을 가능성(MAX_TOKENS) → 한 번 더 짧게 재시도
+    if (finish === "MAX_TOKENS") {
+      const retry = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: PROMPT + "\n\n각 항목은 짧고 간결하게(한 문장 이내) 작성하세요." }, videoPart] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: "application/json" },
+          }),
+        }
+      );
+      if (retry.ok) {
+        const rj = await retry.json();
+        parsed = tryParseJson(rj.candidates?.[0]?.content?.parts?.[0]?.text || "");
+      }
+    }
+    if (!parsed) throw new Error("분석 결과를 정리하는 중 문제가 생겼습니다. 다시 시도해 주세요.");
   }
   if (typeof parsed.is_soccer !== "boolean") parsed.is_soccer = false;
   return parsed;
 }
+
+// JSON 파싱 (잘린 경우 마지막 완전한 구조까지 복구 시도)
+function tryParseJson(text) {
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  // 흔한 잘림: 끝의 불완전한 배열/객체를 닫아본다
+  const cleaned = text.trim().replace(/,\s*$/, "");
+  for (const tail of ["", '"]}', '"]}', "]}", "}", '"}']) {
+    try { return JSON.parse(cleaned + tail); } catch {}
+  }
+  return null;
+}
+

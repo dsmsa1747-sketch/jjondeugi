@@ -54,7 +54,7 @@ export async function POST(req) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1200, responseMimeType: "application/json" },
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2048, responseMimeType: "application/json" },
         }),
       }
     );
