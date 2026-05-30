@@ -29,6 +29,7 @@ export default function Nav() {
       <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
         <Link href="/analyze" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>분석 시작</Link>
         <Link href="/community" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>커뮤니티</Link>
+        <Link href="/care" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>선수케어</Link>
         <Link href="/pricing" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>가격 안내</Link>
         {session && (
           <Link href="/mypage" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>내 분석</Link>
