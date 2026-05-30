@@ -43,7 +43,10 @@ steps:
           --allow-unauthenticated \
           --cpu=1 --memory=512Mi \
           --min-instances=0 --max-instances=5 \
-          --set-env-vars="GCP_PROJECT=$PROJECT_ID,WORKER_URL=${_WORKER_URL}"
+          --update-env-vars="GCP_PROJECT=$PROJECT_ID,WORKER_URL=${_WORKER_URL}"
+        # 공개 접속 허용(재배포 때 풀리지 않도록 매번 보장)
+        gcloud run services add-iam-policy-binding soccermom-app \
+          --region=${_REGION} --member="allUsers" --role="roles/run.invoker" || true
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app'
