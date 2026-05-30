@@ -86,6 +86,8 @@ function AnalyzeContent() {
       if (!res.ok) {
         if (data.code === "NOT_SOCCER") {
           setErr("⚠️ 축구 경기/훈련 영상으로 보이지 않습니다. 축구 영상으로 다시 시도해 주세요.");
+        } else if (data.code === "YOUTUBE_UNREADABLE") {
+          setErr("⚠️ " + (data.error || "이 유튜브 영상은 자동 분석이 어렵습니다. mp4 파일을 직접 업로드해 보세요."));
         } else if (data.code === "LOGIN_REQUIRED") {
           setErr("로그인이 필요합니다.");
         } else {

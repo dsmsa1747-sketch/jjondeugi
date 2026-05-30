@@ -22,9 +22,10 @@ export async function POST(req) {
       );
     }
 
-    const { youtubeUrl } = await req.json();
-    if (!youtubeUrl) {
-      return NextResponse.json({ error: "youtubeUrl 이 필요합니다." }, { status: 400 });
+    const { youtubeUrl, gsUri } = await req.json();
+    const source = gsUri || youtubeUrl;
+    if (!source) {
+      return NextResponse.json({ error: "youtubeUrl 또는 gsUri 가 필요합니다." }, { status: 400 });
     }
 
     if (!process.env.GEMINI_API_KEY) {
@@ -35,7 +36,15 @@ export async function POST(req) {
     }
 
     // 2) 실제 영상 분석 + 축구 판별
-    const analysis = await analyzeFast(youtubeUrl);
+    let analysis;
+    try {
+      analysis = await analyzeFast(source);
+    } catch (e) {
+      if (e.code === "YOUTUBE_UNREADABLE") {
+        return NextResponse.json({ error: e.message, code: "YOUTUBE_UNREADABLE" }, { status: 422 });
+      }
+      throw e;
+    }
 
     // 3) 축구 영상이 아니면 거부 (작업 생성/과금 없음)
     if (!analysis.is_soccer) {
@@ -56,7 +65,7 @@ export async function POST(req) {
     // 4) 관리자(무료): 즉시 공개 / 일반: 결제 전까지 결과 숨김(pendingResult)
     await createJob(jobId, {
       mode: "fast",
-      video: youtubeUrl,
+      video: source,
       userEmail: email,
       price: amount,
       status: admin ? "done" : "awaiting_payment",
