@@ -2,6 +2,7 @@
 // ⚠️ 의학적 처방이 아니라 일반 영양 가이드입니다. 알레르기·질환은 전문가 상담.
 import { NextResponse } from "next/server";
 import { getUserEmail } from "@/lib/access";
+import { safeJsonParse } from "@/lib/jsonRepair";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +66,9 @@ export async function POST(req) {
     const j = await r.json();
     const text = j.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error("응답이 비어있습니다.");
-    return NextResponse.json({ result: JSON.parse(text) });
+    const result = safeJsonParse(text);
+    if (!result) throw new Error("결과 정리 중 문제가 생겼습니다. 다시 시도해 주세요.");
+    return NextResponse.json({ result });
   } catch (e) {
     console.error("[nutrition] error:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });

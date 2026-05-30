@@ -24,6 +24,13 @@ function AnalyzeContent() {
 
   const isPrecise = mode === "precise";
 
+  // beforeunload warning when analysis is running
+  useEffect(() => {
+    const h = (e) => { if (busy) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [busy]);
+
   // 파일 업로드
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -114,8 +121,8 @@ function AnalyzeContent() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>영상 분석 시작</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>분석 모드를 선택하고 영상을 제출하세요.</p>
+      <h1 style={{ fontSize: 28, marginBottom: 8, color: "#fff" }}>영상 분석 시작</h1>
+      <p style={{ color: "var(--color-text-secondary)", marginBottom: 24 }}>분석 모드를 선택하고 영상을 제출하세요.</p>
 
       {/* 모드 선택 */}
       <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>
@@ -123,9 +130,9 @@ function AnalyzeContent() {
           onClick={() => setMode("fast")}
           style={{
             flex: 1, padding: "14px 0",
-            background: !isPrecise ? "#3b82f6" : "white",
-            color: !isPrecise ? "white" : "#374151",
-            border: "2px solid #3b82f6",
+            background: !isPrecise ? "var(--color-accent)" : "var(--color-bg-card)",
+            color: !isPrecise ? "#0B0E0C" : "var(--color-text-secondary)",
+            border: !isPrecise ? "2px solid var(--color-accent)" : "2px solid var(--color-border)",
             borderRadius: 10, cursor: "pointer",
             fontWeight: "bold", fontSize: 15,
           }}
@@ -136,9 +143,9 @@ function AnalyzeContent() {
           onClick={() => setMode("precise")}
           style={{
             flex: 1, padding: "14px 0",
-            background: isPrecise ? "#22c55e" : "white",
-            color: isPrecise ? "white" : "#374151",
-            border: "2px solid #22c55e",
+            background: isPrecise ? "#22c55e" : "var(--color-bg-card)",
+            color: isPrecise ? "#0B0E0C" : "var(--color-text-secondary)",
+            border: isPrecise ? "2px solid #22c55e" : "2px solid var(--color-border)",
             borderRadius: 10, cursor: "pointer",
             fontWeight: "bold", fontSize: 15,
           }}
@@ -149,8 +156,8 @@ function AnalyzeContent() {
 
       {/* 빠른 분석: 유튜브 URL만 */}
       {!isPrecise && (
-        <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb" }}>
-          <h2 style={{ margin: "0 0 16px" }}>유튜브 링크 입력</h2>
+        <div style={{ background: "var(--color-bg-card)", borderRadius: 12, padding: 24, border: "1px solid var(--color-border)" }}>
+          <h2 style={{ margin: "0 0 16px", color: "#fff" }}>유튜브 링크 입력</h2>
           <input
             type="url"
             placeholder="https://www.youtube.com/watch?v=..."
@@ -158,8 +165,9 @@ function AnalyzeContent() {
             onChange={(e) => setYoutubeUrl(e.target.value)}
             style={{
               width: "100%", padding: "12px 16px",
-              border: "1px solid #d1d5db", borderRadius: 8,
+              border: "1px solid var(--color-border)", borderRadius: 8,
               fontSize: 15, boxSizing: "border-box", marginBottom: 12,
+              background: "var(--color-bg-primary)", color: "#fff",
             }}
           />
           {err && <p style={{ color: "crimson", marginBottom: 8 }}>{err}</p>}
@@ -168,45 +176,51 @@ function AnalyzeContent() {
             disabled={busy || !youtubeUrl}
             style={{
               width: "100%", padding: "12px 0",
-              background: busy || !youtubeUrl ? "#9ca3af" : "#3b82f6",
-              color: "white", border: "none", borderRadius: 8,
+              background: busy || !youtubeUrl ? "var(--color-border)" : "var(--color-accent)",
+              color: busy || !youtubeUrl ? "var(--color-text-secondary)" : "#0B0E0C",
+              border: "none", borderRadius: 8,
               fontSize: 16, fontWeight: "bold",
               cursor: busy || !youtubeUrl ? "not-allowed" : "pointer",
             }}
           >
             {busy ? "처리 중…" : "분석 결제하기 (2,000원)"}
           </button>
+          {busy && (
+            <p style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#f97316", fontWeight: 600 }}>
+              ⚠️ 분석 중에는 페이지를 벗어나지 마세요 (분석이 중단됩니다)
+            </p>
+          )}
         </div>
       )}
 
       {/* 정밀 분석: 파일 업로드 + PlayerSelector */}
       {isPrecise && (
-        <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb" }}>
-          <h2 style={{ margin: "0 0 8px" }}>영상 업로드</h2>
-          <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>
+        <div style={{ background: "var(--color-bg-card)", borderRadius: 12, padding: 24, border: "1px solid var(--color-border)" }}>
+          <h2 style={{ margin: "0 0 8px", color: "#fff" }}>영상 업로드</h2>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: 14, margin: "0 0 16px" }}>
             mp4 파일을 업로드하거나 유튜브 링크를 입력하세요.<br />
             파일 업로드 시 클릭으로 선수를 지정할 수 있습니다.
           </p>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold" }}>유튜브 링크 (파일 없을 때)</label>
+            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold", color: "var(--color-text-secondary)", fontSize: 13 }}>유튜브 링크 (파일 없을 때)</label>
             <input
               type="url"
               placeholder="https://www.youtube.com/watch?v=..."
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, boxSizing: "border-box", fontSize: 14 }}
+              style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--color-border)", borderRadius: 8, boxSizing: "border-box", fontSize: 14, background: "var(--color-bg-primary)", color: "#fff" }}
             />
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold" }}>또는 파일 직접 업로드 (mp4, 권장)</label>
+            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold", color: "var(--color-text-secondary)", fontSize: 13 }}>또는 파일 직접 업로드 (mp4, 권장)</label>
             <input
               ref={fileRef}
               type="file"
               accept="video/*"
               onChange={handleFileChange}
-              style={{ marginBottom: 8, display: "block" }}
+              style={{ marginBottom: 8, display: "block", color: "var(--color-text-secondary)" }}
             />
             {uploadFile && uploadStep === "idle" && (
               <button
@@ -219,15 +233,15 @@ function AnalyzeContent() {
                 GCS에 업로드 시작
               </button>
             )}
-            {uploadStep === "uploading" && <p style={{ color: "#6b7280" }}>업로드 중…</p>}
-            {uploadStep === "done" && <p style={{ color: "#16a34a" }}>✓ 업로드 완료</p>}
+            {uploadStep === "uploading" && <p style={{ color: "var(--color-text-secondary)" }}>업로드 중…</p>}
+            {uploadStep === "done" && <p style={{ color: "#22c55e" }}>✓ 업로드 완료</p>}
             {uploadStep === "error" && <p style={{ color: "crimson" }}>업로드 실패: {err}</p>}
           </div>
 
           {/* 파일 업로드 완료: PlayerSelector 표시 */}
           {gsUri && videoPreviewUrl && (
-            <div style={{ marginTop: 24, borderTop: "1px solid #e5e7eb", paddingTop: 24 }}>
-              <h3 style={{ margin: "0 0 12px" }}>선수 지정 (선택)</h3>
+            <div style={{ marginTop: 24, borderTop: "1px solid var(--color-border)", paddingTop: 24 }}>
+              <h3 style={{ margin: "0 0 12px", color: "#fff" }}>선수 지정 (선택)</h3>
               <PlayerSelector
                 videoUrl={videoPreviewUrl}
                 gsUri={gsUri}
@@ -268,14 +282,19 @@ function AnalyzeContent() {
                 }}
                 disabled={busy}
                 style={{
-                  padding: "12px 24px", background: busy ? "#9ca3af" : "#22c55e",
-                  color: "white", border: "none", borderRadius: 8,
+                  padding: "12px 24px", background: busy ? "var(--color-border)" : "#22c55e",
+                  color: busy ? "var(--color-text-secondary)" : "#0B0E0C", border: "none", borderRadius: 8,
                   fontSize: 15, fontWeight: "bold",
                   cursor: busy ? "not-allowed" : "pointer",
                 }}
               >
                 {busy ? "처리 중…" : "유튜브 링크로 정밀분석 (5,000원)"}
               </button>
+              {busy && (
+                <p style={{ marginTop: 10, fontSize: 13, color: "#f97316", fontWeight: 600 }}>
+                  ⚠️ 분석 중에는 페이지를 벗어나지 마세요 (분석이 중단됩니다)
+                </p>
+              )}
               {err && <p style={{ color: "crimson", marginTop: 8 }}>{err}</p>}
             </div>
           )}
@@ -285,11 +304,11 @@ function AnalyzeContent() {
       {/* 정직 안내 */}
       <div style={{
         marginTop: 24, padding: 16,
-        background: "#f9fafb", borderRadius: 8,
-        borderLeft: "4px solid #d1d5db",
-        fontSize: 13, color: "#6b7280",
+        background: "var(--color-bg-card)", borderRadius: 8,
+        borderLeft: "4px solid var(--color-border)",
+        fontSize: 13, color: "var(--color-text-secondary)",
       }}>
-        <b>분석 유의사항:</b> 정밀분석의 거리·속도는 경기장 보정점이 없을 경우 상대 추정값(px 기준)으로 표기됩니다.
+        <b style={{ color: "#fff" }}>분석 유의사항:</b> 정밀분석의 거리·속도는 경기장 보정점이 없을 경우 상대 추정값(px 기준)으로 표기됩니다.
         등번호 자동인식은 약하니 직접 입력을 권장합니다. AI 측정·오차 있음.
       </div>
     </div>
@@ -298,7 +317,7 @@ function AnalyzeContent() {
 
 export default function AnalyzePage() {
   return (
-    <Suspense fallback={<div>로딩 중...</div>}>
+    <Suspense fallback={<div style={{ color: "var(--color-text-secondary)" }}>로딩 중...</div>}>
       <AnalyzeContent />
     </Suspense>
   );

@@ -1,6 +1,7 @@
 // AI 개인훈련 루틴 — Gemini 기반 (포지션·약점 맞춤 드릴)
 import { NextResponse } from "next/server";
 import { getUserEmail } from "@/lib/access";
+import { safeJsonParse } from "@/lib/jsonRepair";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,7 +64,9 @@ drills 는 4~6개 작성하세요.`;
     const j = await r.json();
     const text = j.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error("응답이 비어있습니다.");
-    return NextResponse.json({ result: JSON.parse(text) });
+    const result = safeJsonParse(text);
+    if (!result) throw new Error("결과 정리 중 문제가 생겼습니다. 다시 시도해 주세요.");
+    return NextResponse.json({ result });
   } catch (e) {
     console.error("[training] error:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });

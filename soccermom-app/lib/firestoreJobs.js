@@ -42,14 +42,15 @@ export async function getJob(jobId) {
 }
 
 // 사용자 이메일로 최근 작업 목록 조회 (마이페이지용)
-export async function getUserJobs(userEmail, limit = 20) {
+// 복합 인덱스가 필요 없도록 orderBy 없이 가져와 코드에서 정렬
+export async function getUserJobs(userEmail, limit = 50) {
   const snap = await getDb()
     .collection(COLLECTION)
     .where("userEmail", "==", userEmail)
-    .orderBy("createdAt", "desc")
-    .limit(limit)
     .get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const rows = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return rows.slice(0, limit);
 }
 
 // 결제 기록 저장
