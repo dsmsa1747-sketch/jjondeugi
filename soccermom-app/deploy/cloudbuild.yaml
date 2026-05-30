@@ -37,16 +37,28 @@ steps:
     args:
       - -c
       - |
+        set -e
+        SA="soccermom-app-sa@$PROJECT_ID.iam.gserviceaccount.com"
+        WORKER_INVOKER="$SA"
         gcloud run deploy soccermom-app \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app \
           --region=${_REGION} \
           --allow-unauthenticated \
+          --service-account="$SA" \
           --cpu=1 --memory=512Mi \
           --min-instances=0 --max-instances=5 \
-          --update-env-vars="GCP_PROJECT=$PROJECT_ID,WORKER_URL=${_WORKER_URL}"
+          --update-env-vars="GCP_PROJECT=$PROJECT_ID,WORKER_URL=${_WORKER_URL},CLOUD_TASKS_LOCATION=${_REGION},CLOUD_TASKS_QUEUE=soccermom-analyze,WORKER_INVOKER_SA=$WORKER_INVOKER"
         # 공개 접속 허용(재배포 때 풀리지 않도록 매번 보장)
         gcloud run services add-iam-policy-binding soccermom-app \
           --region=${_REGION} --member="allUsers" --role="roles/run.invoker" || true
+        # ── 정밀분석(Cloud Tasks) 자동 권한 설정 ──
+        gcloud services enable cloudtasks.googleapis.com || true
+        gcloud tasks queues create soccermom-analyze --location=${_REGION} || true
+        gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA" --role="roles/cloudtasks.enqueuer" || true
+        gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA" --role="roles/iam.serviceAccountTokenCreator" || true
+        gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA" --role="roles/datastore.user" || true
+        gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA" --role="roles/storage.objectAdmin" || true
+        gcloud run services add-iam-policy-binding soccermom-yolo-worker --region=us-central1 --member="serviceAccount:$SA" --role="roles/run.invoker" || true
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/soccermom-app'
