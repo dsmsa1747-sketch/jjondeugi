@@ -1,3 +1,4 @@
+import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import Nav from "@/components/Nav";
 import SwRegister from "@/components/SwRegister";
@@ -20,7 +21,7 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1a1a2e",
+  themeColor: "#0B0E0C",
 };
 
 export default function RootLayout({ children }) {
@@ -34,15 +35,15 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#1a1a2e" />
       </head>
-      <body style={{ margin: 0, fontFamily: "'Noto Sans KR', sans-serif", background: "#f8f9fa", color: "#1a1a2e" }}>
+      <body style={{ margin: 0, background: "var(--color-bg-primary)", color: "var(--color-text-primary)" }}>
         <SessionProvider>
           <Nav />
-          <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px", minHeight: "calc(100vh - 56px)" }}>
+          <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px", minHeight: "calc(100vh - 56px)" }}>
             {children}
           </main>
-          <footer style={{ textAlign: "center", padding: "20px 16px", fontSize: 13, color: "#6b7280", borderTop: "1px solid #e5e7eb", background: "white" }}>
+          <footer style={{ textAlign: "center", padding: "24px 16px", fontSize: 13, color: "var(--color-text-tertiary)", borderTop: "1px solid var(--color-border)", background: "var(--color-bg-card)" }}>
             <p>
-              &copy; 2024 사커맘 | <a href="/privacy" style={{ color: "#6b7280" }}>개인정보처리방침</a> | <a href="/terms" style={{ color: "#6b7280" }}>이용약관</a>
+              &copy; 2026 사커맘 | <a href="/privacy" style={{ color: "var(--color-text-secondary)" }}>개인정보처리방침</a> | <a href="/terms" style={{ color: "var(--color-text-secondary)" }}>이용약관</a>
             </p>
             <p style={{ marginTop: 4, fontSize: 12 }}>AI 측정값으로 오차가 있을 수 있으며, 전문 코치의 판단을 대체하지 않습니다.</p>
           </footer>

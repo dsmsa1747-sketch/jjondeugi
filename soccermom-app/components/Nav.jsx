@@ -9,7 +9,7 @@ export default function Nav() {
 
   return (
     <nav style={{
-      background: "#1a1a2e",
+      background: "var(--color-bg-card)",
       color: "white",
       padding: "0 20px",
       display: "flex",
@@ -19,19 +19,19 @@ export default function Nav() {
       position: "sticky",
       top: 0,
       zIndex: 100,
-      boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+      borderBottom: "1px solid var(--color-border)",
     }}>
-      <Link href="/" style={{ color: "white", textDecoration: "none", fontWeight: "bold", fontSize: 20 }}>
+      <Link href="/" style={{ color: "var(--color-accent)", textDecoration: "none", fontWeight: 900, fontSize: 20, fontFamily: "var(--font-heading)", letterSpacing: "-0.02em" }}>
         ⚽ 사커맘
       </Link>
 
       {/* 데스크탑 메뉴 */}
       <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-        <Link href="/analyze" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>분석 시작</Link>
-        <Link href="/community" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>커뮤니티</Link>
-        <Link href="/pricing" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>가격 안내</Link>
+        <Link href="/analyze" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>분석 시작</Link>
+        <Link href="/community" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>커뮤니티</Link>
+        <Link href="/pricing" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>가격 안내</Link>
         {session && (
-          <Link href="/mypage" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>내 분석</Link>
+          <Link href="/mypage" style={{ color: "var(--color-text-secondary)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>내 분석</Link>
         )}
         {status === "loading" ? null : session ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -54,16 +54,7 @@ export default function Nav() {
         ) : (
           <button
             onClick={() => signIn(undefined, { callbackUrl: "/analyze" })}
-            style={{
-              background: "#22c55e",
-              border: "none",
-              color: "white",
-              padding: "6px 16px",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: "bold",
-            }}
+            className="btn btn-primary btn-sm"
           >
             로그인
           </button>
