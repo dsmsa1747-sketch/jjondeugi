@@ -1,4 +1,5 @@
 import Link from "next/link";
+import InlineAd from "@/components/InlineAd";
 
 export default function Home() {
   return (
@@ -70,6 +71,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 광고 영역 */}
+      <InlineAd />
 
       {/* 커뮤니티 안내 */}
       <section className="card" style={{ padding: 28, marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
