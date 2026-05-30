@@ -28,6 +28,7 @@ export default function Nav() {
       {/* 데스크탑 메뉴 */}
       <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
         <Link href="/analyze" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>분석 시작</Link>
+        <Link href="/community" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>커뮤니티</Link>
         <Link href="/pricing" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>가격 안내</Link>
         {session && (
           <Link href="/mypage" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: 14 }}>내 분석</Link>
