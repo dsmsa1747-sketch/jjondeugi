@@ -181,43 +181,70 @@ $('#modalbg').addEventListener('click',e=>{if(e.target.id==='modalbg')closeModal
 const SPLIT={brand:0.90,platform:0.07,owner:0.03};
 const WITHHOLD=0.033;
 
-/* ---------- DB (demo seed) ---------- */
-function seed(){
-  if(!ls.get('seeded',false)){
-    ls.set('products',[
-      {id:'p1',name:'국산 무농약 콩나물 300g',price:2200,cat:'채소',emoji:'🌱',brand:'새벽농장',stock:120,sales:842,desc:'아삭한 식감의 국산 무농약 콩나물. 당일 수확 후 바로 배송.',status:'판매중'},
-      {id:'p2',name:'유기농 시금치 한 단',price:3500,cat:'채소',emoji:'🥬',brand:'들녘농원',stock:64,sales:311,desc:'유기농 인증 시금치.',status:'판매중'},
-      {id:'p3',name:'알이 꽉 찬 방울토마토 1kg',price:8900,cat:'과일',emoji:'🍅',brand:'햇살팜',stock:38,sales:520,desc:'당도 9brix 이상 프리미엄 방울토마토.',status:'판매중'},
-      {id:'p4',name:'갓 볶은 스페셜티 원두 200g',price:12000,cat:'가공식품',emoji:'☕',brand:'로스터리K',stock:90,sales:177,desc:'주문 즉시 로스팅.',status:'판매중'},
-      {id:'p5',name:'제주 노지 감귤 3kg',price:15900,cat:'과일',emoji:'🍊',brand:'제주직송',stock:25,sales:998,desc:'산지 직송 새콤달콤 감귤.',status:'판매중'},
-      {id:'p6',name:'동물복지 유정란 15구',price:7200,cat:'축산',emoji:'🥚',brand:'행복한닭',stock:140,sales:430,desc:'동물복지 인증 유정란.',status:'판매중'},
-    ]);
-    ls.set('vendors',[
-      {id:'v1',company:'새벽농장',bizNo:'123-45-67890',email:'dawn@farm.kr',phone:'010-1111-2222',status:'승인',createdAt:Date.now()-8.6e8},
-      {id:'v2',company:'들녘농원',bizNo:'222-33-44444',email:'field@farm.kr',phone:'010-3333-4444',status:'승인',createdAt:Date.now()-7e8},
-      {id:'v3',company:'산미베이커리',bizNo:'555-66-77777',email:'sanmi@bake.kr',phone:'010-5555-6666',status:'대기',createdAt:Date.now()-1.2e8},
-      {id:'v4',company:'청정수산',bizNo:'888-99-00000',email:'sea@fresh.kr',phone:'010-7777-8888',status:'대기',createdAt:Date.now()-3e7},
-    ]);
-    ls.set('owners',[
-      {id:'o1',name:'이수연',sns:'@suyeon_shop',channel:'instagram',email:'suyeon@mail.com',code:'SY4F2A',status:'승인',gmv:182500,createdAt:Date.now()-6e8},
-      {id:'o2',name:'박지호',sns:'@jiho_living',channel:'youtube',email:'jiho@mail.com',code:'JH9K1B',status:'승인',gmv:94000,createdAt:Date.now()-5e8},
-      {id:'o3',name:'최하은',sns:'@haeun.daily',channel:'instagram',email:'haeun@mail.com',code:'',status:'대기',gmv:0,createdAt:Date.now()-2e7},
-    ]);
-    ls.set('orders',[
-      {id:'ORD-1001',buyer:'김구매',ownerCode:'SY4F2A',items:[{id:'p5',name:'제주 노지 감귤 3kg',price:15900,qty:1,emoji:'🍊',brand:'제주직송'}],amount:15900,status:'배송완료',createdAt:Date.now()-5.5e8},
-      {id:'ORD-1002',buyer:'정주문',ownerCode:'JH9K1B',items:[{id:'p1',name:'국산 무농약 콩나물 300g',price:2200,qty:3,emoji:'🌱',brand:'새벽농장'}],amount:9600,status:'배송중',createdAt:Date.now()-1.5e8},
-    ]);
-    ls.set('seeded',true);
-  }
+/* ---------- 백엔드 연결 설정 ----------
+   API_BASE 를 비워두면 데모(localStorage)로 동작.
+   이 화면이 Google Apps Script 웹앱으로 서빙되면 자동으로 google.script.run 사용(동일 출처).
+   별도 배포된 Apps Script 백엔드를 쓰려면 API_BASE 에 /exec URL 입력. */
+const CONFIG = { API_BASE:'', TOSS_CLIENT_KEY:'' };
+const onGAS   = ()=> typeof google!=='undefined' && google.script && google.script.run;
+const useFetch= ()=> /^https:\/\/script\.google\.com/.test(CONFIG.API_BASE);
+const backendOn = ()=> onGAS() || useFetch();
+function server(action,payload){
+  if(onGAS()) return new Promise((res,rej)=>google.script.run
+    .withSuccessHandler(j=>{try{const d=JSON.parse(j);d.ok?res(d.result):rej(new Error(d.error||'오류'))}catch(e){rej(e)}})
+    .withFailureHandler(e=>rej(new Error((e&&e.message)||'요청 실패')))
+    .apiCall(JSON.stringify({action,payload})));
+  return fetch(CONFIG.API_BASE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload})})
+    .then(r=>r.json()).then(d=>{if(!d.ok)throw new Error(d.error||'오류');return d.result;});
 }
+
+/* ---------- 시드 데이터 (데모/초기) ---------- */
+function seedData(){ const N=Date.now(); return {
+  products:[
+    {id:'p1',name:'국산 무농약 콩나물 300g',price:2200,cat:'채소',emoji:'🌱',brand:'새벽농장',stock:120,sales:842,desc:'아삭한 식감의 국산 무농약 콩나물. 당일 수확 후 바로 배송.',status:'판매중'},
+    {id:'p2',name:'유기농 시금치 한 단',price:3500,cat:'채소',emoji:'🥬',brand:'들녘농원',stock:64,sales:311,desc:'유기농 인증 시금치.',status:'판매중'},
+    {id:'p3',name:'알이 꽉 찬 방울토마토 1kg',price:8900,cat:'과일',emoji:'🍅',brand:'햇살팜',stock:38,sales:520,desc:'당도 9brix 이상 프리미엄 방울토마토.',status:'판매중'},
+    {id:'p4',name:'갓 볶은 스페셜티 원두 200g',price:12000,cat:'가공식품',emoji:'☕',brand:'로스터리K',stock:90,sales:177,desc:'주문 즉시 로스팅.',status:'판매중'},
+    {id:'p5',name:'제주 노지 감귤 3kg',price:15900,cat:'과일',emoji:'🍊',brand:'제주직송',stock:25,sales:998,desc:'산지 직송 새콤달콤 감귤.',status:'판매중'},
+    {id:'p6',name:'동물복지 유정란 15구',price:7200,cat:'축산',emoji:'🥚',brand:'행복한닭',stock:140,sales:430,desc:'동물복지 인증 유정란.',status:'판매중'},
+  ],
+  vendors:[
+    {id:'v1',company:'새벽농장',bizNo:'123-45-67890',email:'dawn@farm.kr',phone:'010-1111-2222',status:'승인',createdAt:N-8.6e8},
+    {id:'v2',company:'들녘농원',bizNo:'222-33-44444',email:'field@farm.kr',phone:'010-3333-4444',status:'승인',createdAt:N-7e8},
+    {id:'v3',company:'산미베이커리',bizNo:'555-66-77777',email:'sanmi@bake.kr',phone:'010-5555-6666',status:'대기',createdAt:N-1.2e8},
+    {id:'v4',company:'청정수산',bizNo:'888-99-00000',email:'sea@fresh.kr',phone:'010-7777-8888',status:'대기',createdAt:N-3e7},
+  ],
+  owners:[
+    {id:'o1',name:'이수연',sns:'@suyeon_shop',channel:'instagram',email:'suyeon@mail.com',code:'SY4F2A',status:'승인',gmv:182500,createdAt:N-6e8},
+    {id:'o2',name:'박지호',sns:'@jiho_living',channel:'youtube',email:'jiho@mail.com',code:'JH9K1B',status:'승인',gmv:94000,createdAt:N-5e8},
+    {id:'o3',name:'최하은',sns:'@haeun.daily',channel:'instagram',email:'haeun@mail.com',code:'',status:'대기',gmv:0,createdAt:N-2e7},
+  ],
+  orders:[
+    {id:'ORD-1001',buyer:'김구매',ownerCode:'SY4F2A',items:[{id:'p5',name:'제주 노지 감귤 3kg',price:15900,qty:1,emoji:'🍊',brand:'제주직송'}],amount:15900,status:'배송완료',createdAt:N-5.5e8},
+    {id:'ORD-1002',buyer:'정주문',ownerCode:'JH9K1B',items:[{id:'p1',name:'국산 무농약 콩나물 300g',price:2200,qty:3,emoji:'🌱',brand:'새벽농장'}],amount:9600,status:'배송중',createdAt:N-1.5e8},
+  ],
+  withdrawals:[],
+};}
+
+/* ---------- 인메모리 스토어 (백엔드 or 데모) ---------- */
+const MEM={products:[],vendors:[],owners:[],orders:[],withdrawals:[]};
+function loadLocal(){ let d=ls.get('data',null); if(!d){ d=seedData(); ls.set('data',d); } Object.assign(MEM,d); }
+function persist(){ if(backendOn()){ server('saveAll',MEM).catch(()=>{}); } else { ls.set('data',MEM); } }
 const DB={
-  products:()=>ls.get('products',[]), setProducts:v=>ls.set('products',v),
-  vendors:()=>ls.get('vendors',[]), setVendors:v=>ls.set('vendors',v),
-  owners:()=>ls.get('owners',[]), setOwners:v=>ls.set('owners',v),
-  orders:()=>ls.get('orders',[]), setOrders:v=>ls.set('orders',v),
+  products:()=>MEM.products, setProducts:v=>{MEM.products=v;persist();},
+  vendors:()=>MEM.vendors, setVendors:v=>{MEM.vendors=v;persist();},
+  owners:()=>MEM.owners, setOwners:v=>{MEM.owners=v;persist();},
+  orders:()=>MEM.orders, setOrders:v=>{MEM.orders=v;persist();},
+  withdrawals:()=>MEM.withdrawals, setWithdrawals:v=>{MEM.withdrawals=v;persist();},
   cart:()=>ls.get('cart',[]), setCart:v=>ls.set('cart',v),
 };
-seed();
+async function init(){
+  try{
+    if(backendOn()){ const d=await server('loadAll',{})||{}; Object.assign(MEM,{products:d.products||[],vendors:d.vendors||[],owners:d.owners||[],orders:d.orders||[],withdrawals:d.withdrawals||[]}); }
+    else loadLocal();
+  }catch(e){ loadLocal(); }
+  render();
+}
 
 /* ---------- State / router ---------- */
 const S={ role:ls.get('role',null), page:'', detail:null, svTab:'dash', adTab:'dash' };
@@ -411,7 +438,7 @@ function OwnerDash(ownerId){
   const orders=DB.orders().filter(x=>x.ownerCode===o.code);
   const gmv=orders.reduce((s,x)=>s+x.amount,0)+o.gmv;
   const earned=Math.round(gmv*SPLIT.owner);
-  const withdrawn=(ls.get('wd_'+o.id,[])).reduce((s,w)=>s+w.gross,0);
+  const withdrawn=DB.withdrawals().filter(w=>w.ownerId===o.id).reduce((s,w)=>s+w.gross,0);
   const avail=Math.max(0,earned-withdrawn);
   return `<div class="h1">내 분양몰 · 정산</div><div class="sub" style="margin-bottom:18px">오너코드 ${esc(o.code)} · 판매마다 3% 캐시백</div>
   <div class="tiles">
@@ -439,7 +466,7 @@ function withdrawModal(oid,avail){
 }
 function wdCalc(){ const g=Math.floor(+($('#wd_amt').value||0)); const tax=Math.round(g*WITHHOLD); $('#wd_tax').textContent=won(tax); $('#wd_net').textContent=won(Math.max(0,g-tax)); }
 function doWithdraw(oid,avail){ const g=Math.floor(+($('#wd_amt').value||0)); if(g<10000){toast('최소 10,000원');return;} if(g>avail){toast('가능액 초과');return;}
-  const w=ls.get('wd_'+oid,[]); const tax=Math.round(g*WITHHOLD); w.push({gross:g,tax,net:g-tax,at:Date.now()}); ls.set('wd_'+oid,w);
+  const w=DB.withdrawals(); const tax=Math.round(g*WITHHOLD); w.push({ownerId:oid,gross:g,tax,net:g-tax,at:Date.now()}); DB.setWithdrawals(w);
   closeModal(); toast('출금 신청 완료 · 실수령 '+won(g-tax)); render(); }
 function OwnerMkt(){
   const sns=[['instagram','📸'],['youtube','▶️'],['tiktok','🎵'],['threads','@']];
@@ -662,7 +689,7 @@ function AdSettle(){
 
 /* ---------- PWA ---------- */
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
-render();
+init();
 </script>
 </body>
 </html>
