@@ -10,13 +10,15 @@ substitutions:
   _WORKER_URL: ''               # 워커 배포 후 URL(있으면 전달)
 
 steps:
+  # 0) Artifact Registry 저장소 준비(없으면 생성, 있으면 통과)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
       - -c
       - |
+        gcloud artifacts repositories describe cloud-run-source-deploy --location=$_REGION || \
         gcloud artifacts repositories create cloud-run-source-deploy \
-          --repository-format=docker --location=$_REGION 2>/dev/null || true
+          --repository-format=docker --location=$_REGION
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
